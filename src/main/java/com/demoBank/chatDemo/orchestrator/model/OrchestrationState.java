@@ -1,0 +1,176 @@
+package com.demoBank.chatDemo.orchestrator.model;
+
+import com.demoBank.chatDemo.gateway.dto.ChatResponse;
+import com.demoBank.chatDemo.gateway.model.ChatSessionContext;
+import com.demoBank.chatDemo.gateway.model.RequestContext;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+/**
+ * Orchestration state - maintains state throughout the orchestration workflow.
+ * 
+ * Contains all intermediate data and results as the request flows through the pipeline.
+ */
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class OrchestrationState {
+    
+    /**
+     * Original request context.
+     */
+    private RequestContext requestContext;
+    
+    /**
+     * Session context (loaded from session).
+     */
+    private ChatSessionContext sessionContext;
+    
+    /**
+     * Extracted intent (domain + metric + parameters).
+     * TODO: Create Intent model
+     */
+    private Object extractedIntent;
+    
+    /**
+     * Resolved time range (absolute dates).
+     * TODO: Use ChatSessionContext.TimeRange or create specific model
+     */
+    private Object resolvedTimeRange;
+    
+    /**
+     * Execution plan (which APIs to call).
+     * TODO: Create Plan model
+     */
+    private Object executionPlan;
+    
+    /**
+     * Raw API responses.
+     * TODO: Create appropriate models for API responses
+     */
+    private Object fetchedData;
+    
+    /**
+     * Normalized data (canonical internal models).
+     * TODO: Create normalized data models
+     */
+    private Object normalizedData;
+    
+    /**
+     * Computed results.
+     * TODO: Create computed results model
+     */
+    private Object computedResults;
+    
+    /**
+     * Drafted response text.
+     */
+    private String draftedAnswer;
+    
+    /**
+     * Drafted explanation ("How I got this").
+     */
+    private String draftedExplanation;
+    
+    /**
+     * Final response.
+     */
+    private ChatResponse response;
+    
+    /**
+     * Whether orchestration should stop (e.g., blocked by guard, needs clarification).
+     */
+    @Builder.Default
+    private boolean shouldStop = false;
+    
+    /**
+     * Whether we're awaiting clarification from user.
+     */
+    @Builder.Default
+    private boolean awaitingClarification = false;
+    
+    /**
+     * Whether clarifier is needed (intent is ambiguous).
+     */
+    @Builder.Default
+    private boolean needsClarifier = false;
+    
+    /**
+     * Error message if orchestration failed.
+     */
+    private String errorMessage;
+    
+    /**
+     * Checks if we're awaiting clarification.
+     * 
+     * @return true if clarification is pending
+     */
+    public boolean isAwaitingClarification() {
+        return awaitingClarification || 
+               (sessionContext != null && sessionContext.getClarificationState() != null);
+    }
+    
+    /**
+     * Checks if clarifier is needed.
+     * 
+     * @return true if clarifier should be invoked
+     */
+    public boolean needsClarifier() {
+        return needsClarifier;
+    }
+    
+    /**
+     * Checks if orchestration should stop.
+     * 
+     * @return true if should stop
+     */
+    public boolean shouldStop() {
+        return shouldStop;
+    }
+    
+    /**
+     * Gets the customer ID from request context (trusted source from HTTP header).
+     * 
+     * @return Customer ID, never null (validated in GatewayService)
+     */
+    public String getCustomerId() {
+        if (requestContext == null) {
+            throw new IllegalStateException("RequestContext is null - customerId not available");
+        }
+        String customerId = requestContext.getCustomerId();
+        if (customerId == null || customerId.isBlank()) {
+            throw new IllegalStateException("CustomerId is missing from RequestContext - this should never happen");
+        }
+        return customerId;
+    }
+    
+    /**
+     * Gets the correlation ID from request context.
+     * 
+     * @return Correlation ID
+     */
+    public String getCorrelationId() {
+        return requestContext != null ? requestContext.getCorrelationId() : null;
+    }
+    
+    /**
+     * Gets the session ID from request context.
+     * 
+     * @return Session ID
+     */
+    public String getSessionId() {
+        return requestContext != null ? requestContext.getSessionId() : null;
+    }
+    
+    /**
+     * Gets the message text for processing (translated to English if needed).
+     * 
+     * @return Message text for processing
+     */
+    public String getMessageTextForProcessing() {
+        return requestContext != null ? requestContext.getTranslatedMessageText() : null;
+    }
+}
