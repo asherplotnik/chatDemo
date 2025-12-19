@@ -50,28 +50,38 @@ public class ChatSessionContext {
     private String timezone;
     
     /**
-     * Last resolved intent from previous messages.
+     * Last resolved intent from previous messages (domain + metric).
      * Null if no intent resolved yet.
+     * Will be filled by the Orchestrator.
      */
-    private String lastIntent;
+    private ResolvedIntent lastResolvedIntent;
     
     /**
      * Resolved time range from previous messages (absolute dates).
      * Null if not resolved yet.
+     * Will be filled by the Orchestrator.
      */
-    private TimeRange resolvedTimeRange;
+    private TimeRange lastResolvedTimeRange;
     
     /**
-     * Scope from previous messages (products, currencies, posted/pending).
-     * Null if not resolved yet.
+     * Last selected entities (accountId masked refs, cardId, etc.).
+     * Null if not selected yet.
+     * Will be filled by the Orchestrator.
      */
-    private String scope;
+    private SelectedEntities lastSelectedEntities;
     
     /**
      * Clarification state - if awaiting an answer to a clarifying question.
      * Null if not in clarification mode.
+     * Will be filled by the Orchestrator/Clarifier.
      */
     private ClarificationState clarificationState;
+    
+    /**
+     * Default preferences for the session.
+     * Will be filled by the Orchestrator.
+     */
+    private SessionDefaults defaults;
     
     /**
      * Timestamp when session was created.
@@ -112,6 +122,87 @@ public class ChatSessionContext {
     }
     
     /**
+     * Resolved intent model (domain + metric).
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class ResolvedIntent {
+        /**
+         * Domain: accounts, transactions, creditCards, loans, mortgage, deposits, securities
+         */
+        private String domain;
+        
+        /**
+         * Metric: balance, count, sum, max, min, average, list, etc.
+         */
+        private String metric;
+        
+        /**
+         * Additional intent parameters as JSON string or Map
+         */
+        private String parameters;
+    }
+    
+    /**
+     * Selected entities model (accountId masked refs, cardId, etc.).
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class SelectedEntities {
+        /**
+         * List of masked account references (e.g., "****1234")
+         */
+        private java.util.List<String> accountIds;
+        
+        /**
+         * List of masked card IDs (e.g., "****5678")
+         */
+        private java.util.List<String> cardIds;
+        
+        /**
+         * Other selected entity IDs (loan IDs, deposit IDs, etc.)
+         */
+        private java.util.Map<String, java.util.List<String>> otherEntities;
+    }
+    
+    /**
+     * Session defaults model.
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class SessionDefaults {
+        /**
+         * Transaction status preference: "posted" or "pending"
+         * Default: "posted"
+         */
+        private String transactionStatus; // "posted" or "pending"
+        
+        /**
+         * Currency preference (e.g., "ILS", "USD", "EUR")
+         * Null means no preference (show all currencies)
+         */
+        private String currencyPreference;
+        
+        /**
+         * Paging cursor policy: "auto", "manual", "none"
+         * Default: "auto"
+         */
+        private String pagingCursorPolicy; // "auto", "manual", "none"
+        
+        /**
+         * Page size for paginated results
+         * Default: 10
+         */
+        private Integer pageSize;
+    }
+    
+    /**
      * Clarification state model.
      */
     @Data
@@ -119,8 +210,24 @@ public class ChatSessionContext {
     @AllArgsConstructor
     @Builder
     public static class ClarificationState {
+        /**
+         * The clarifying question asked to the user
+         */
         private String question;
+        
+        /**
+         * Expected answer type (e.g., "date", "account", "amount", "yes_no")
+         */
         private String expectedAnswerType;
+        
+        /**
+         * When the question was asked
+         */
         private Instant askedAt;
+        
+        /**
+         * Context about what we're clarifying (e.g., "time_range", "account_selection")
+         */
+        private String clarificationContext;
     }
 }

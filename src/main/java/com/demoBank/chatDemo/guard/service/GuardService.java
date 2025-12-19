@@ -191,12 +191,12 @@ public class GuardService {
      */
     private String getSystemPromptForCheckType() {
         return switch (checkType.toLowerCase()) {
-            case "prompt-injection" -> GuardSystemPrompt.getPromptInjectionDetectionPrompt();
-            case "malicious-intent" -> GuardSystemPrompt.getMaliciousIntentDetectionPrompt();
-            case "comprehensive" -> GuardSystemPrompt.getComprehensiveSecurityPrompt();
+            case "prompt-injection" -> GuardSystemPrompt.promptInjectionDetectionPrompt;
+            case "malicious-intent" -> GuardSystemPrompt.maliciousIntentDetectionPrompt;
+            case "comprehensive" -> GuardSystemPrompt.comprehensiveSecurityPrompt;
             default -> {
                 log.warn("Unknown check type: {}, using comprehensive check", checkType);
-                yield GuardSystemPrompt.getCondensedComprehensiveSecurityPrompt();
+                yield  GuardSystemPrompt.condensedComprehensiveSecurityPrompt;
             }
         };
     }

@@ -12,6 +12,7 @@ import com.demoBank.chatDemo.guard.model.GuardResult;
 import com.demoBank.chatDemo.guard.service.GuardService;
 import com.demoBank.chatDemo.language.model.LanguageDetectionResult;
 import com.demoBank.chatDemo.language.service.LanguageDetector;
+import com.demoBank.chatDemo.orchestrator.service.OrchestratorService;
 import com.demoBank.chatDemo.translation.model.TranslationResult;
 import com.demoBank.chatDemo.translation.service.InboundTranslator;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +46,7 @@ public class GatewayService {
     private final LanguageDetector languageDetector;
     private final GuardService guardService;
     private final InboundTranslator inboundTranslator;
+    private final OrchestratorService orchestratorService;
     
     /**
      * Processes a chat request through the gateway.
@@ -62,7 +64,11 @@ public class GatewayService {
         
         validateRateLimit(customerId, correlationId);
         
+        // Fetch or create session context
         ChatSessionContext session = sessionService.getOrCreateSession(customerId);
+        
+        // Log session context if it exists
+        logSessionContext(session, correlationId);
         
         LanguageDetectionResult languageResult = establishLanguage(session, request.getMessageText(), correlationId);
         
@@ -70,20 +76,21 @@ public class GatewayService {
         
         String messageTextForProcessing = translateToEnglishIfHebrewDetected(request.getMessageText(), languageResult, session, correlationId);
 
+        // Create request context with session information
         RequestContext context = createRequestContext(
                 customerId, 
                 correlationId, 
-                session.getSessionId(),
+                session,
                 request.getMessageText(),
                 messageTextForProcessing
         );
         
-        log.info("Chat request received - correlationId: {}, customerId: {}, sessionId: {}", 
-                correlationId, CustomerIdMasker.mask(customerId), session.getSessionId());
+        log.info("Chat request received - correlationId: {}, customerId: {}, sessionId: {}, hasContext: {}", 
+                correlationId, CustomerIdMasker.mask(customerId), session.getSessionId(),
+                hasActiveContext(session));
         
-        // TODO: Forward to Security Guard
-        // For now, return a placeholder response
-        return buildPlaceholderResponse(correlationId, languageResult, session.getSessionId(), languageResult.isHebrew(),messageTextForProcessing);
+        // Forward to Orchestrator for processing
+        return orchestratorService.orchestrate(context);
     }
 
     private String translateToEnglishIfHebrewDetected(String messageText, LanguageDetectionResult languageResult, ChatSessionContext session, String correlationId) {
@@ -173,13 +180,15 @@ public class GatewayService {
      * @return Language detection result
      */
     private LanguageDetectionResult establishLanguage(ChatSessionContext session, String messageText, String correlationId) {
-        // Always detect language on every message
+        // Always detect language on every message (to handle language switching)
         LanguageDetectionResult languageResult = languageDetector.detectLanguage(messageText);
         
-        log.info("Language detected - correlationId: {}, sessionId: {}, language: {}, confidence: {}, requiresTranslation: {}", 
+        log.info("Language detected - correlationId: {}, sessionId: {}, language: {}, confidence: {}, requiresTranslation: {}, " +
+                "sessionLanguage: {}", 
                 correlationId, session.getSessionId(), languageResult.getLanguageCode(), 
                 String.format("%.2f", languageResult.getConfidence()),
-                languageResult.requiresTranslation());
+                languageResult.requiresTranslation(),
+                session.getLanguageCode());
         
         // Store language in session only the first time (for audit/tracking)
         if (!session.isLanguageEstablished()) {
@@ -194,11 +203,21 @@ public class GatewayService {
     }
     
     /**
-     * Creates request context with customer ID, correlation ID, session ID, message texts, and timestamp.
+     * Gets the language from session context if available.
+     * 
+     * @param session Chat session context
+     * @return Language code ("he" or "en") or null if not established
+     */
+    private String getLanguageFromSession(ChatSessionContext session) {
+        return session.isLanguageEstablished() ? session.getLanguageCode() : null;
+    }
+    
+    /**
+     * Creates request context with customer ID, correlation ID, session context, message texts, and timestamp.
      * 
      * @param customerId Customer ID
      * @param correlationId Correlation ID
-     * @param sessionId Session ID
+     * @param session Chat session context
      * @param originalMessageText Original message text from user
      * @param translatedMessageText Translated message text (English) if original was Hebrew, otherwise same as original
      * @return Request context
@@ -206,17 +225,55 @@ public class GatewayService {
     private RequestContext createRequestContext(
             String customerId, 
             String correlationId, 
-            String sessionId,
+            ChatSessionContext session,
             String originalMessageText,
             String translatedMessageText) {
         return RequestContext.builder()
                 .customerId(customerId)
                 .correlationId(correlationId)
-                .sessionId(sessionId)
+                .sessionId(session.getSessionId())
+                .sessionContext(session) // Include full session context
                 .originalMessageText(originalMessageText)
                 .translatedMessageText(translatedMessageText)
                 .receivedAt(Instant.now())
                 .build();
+    }
+    
+    /**
+     * Logs session context information for debugging and audit purposes.
+     * 
+     * @param session Chat session context
+     * @param correlationId Correlation ID for logging
+     */
+    private void logSessionContext(ChatSessionContext session, String correlationId) {
+        if (hasActiveContext(session)) {
+            log.debug("Session context - correlationId: {}, sessionId: {}, language: {}, timezone: {}, " +
+                    "hasLastIntent: {}, hasTimeRange: {}, hasSelectedEntities: {}, hasClarification: {}, hasDefaults: {}",
+                    correlationId,
+                    session.getSessionId(),
+                    session.getLanguageCode(),
+                    session.getTimezone(),
+                    session.getLastResolvedIntent() != null,
+                    session.getLastResolvedTimeRange() != null,
+                    session.getLastSelectedEntities() != null,
+                    session.getClarificationState() != null,
+                    session.getDefaults() != null);
+        }
+    }
+    
+    /**
+     * Checks if session has active context (beyond just language detection).
+     * 
+     * @param session Chat session context
+     * @return true if session has any context beyond basic language detection
+     */
+    private boolean hasActiveContext(ChatSessionContext session) {
+        return session.getLastResolvedIntent() != null ||
+               session.getLastResolvedTimeRange() != null ||
+               session.getLastSelectedEntities() != null ||
+               session.getClarificationState() != null ||
+               session.getDefaults() != null ||
+               session.getTimezone() != null;
     }
     
     /**

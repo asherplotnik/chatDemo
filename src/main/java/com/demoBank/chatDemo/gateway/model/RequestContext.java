@@ -35,6 +35,12 @@ public class RequestContext {
     private String sessionId;
     
     /**
+     * Full session context containing conversation state.
+     * Includes language, timezone, last resolved intent, time range, selected entities, etc.
+     */
+    private ChatSessionContext sessionContext;
+    
+    /**
      * Original message text from the user.
      */
     private String originalMessageText;
