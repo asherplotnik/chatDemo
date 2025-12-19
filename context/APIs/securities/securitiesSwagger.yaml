@@ -1,0 +1,527 @@
+openapi: 3.0.3
+
+info:
+  title: Securities API
+  version: 1.0.0
+  description: >
+    Returns the customer's securities accounts, valuations and positions.
+
+servers:
+  - url: https://api.bank.example.com
+    description: Production
+  - url: https://sandbox.api.bank.example.com
+    description: Sandbox
+
+security:
+  - bearerAuth: []
+
+paths:
+  /v1/securities:
+    get:
+      operationId: getSecurities
+      summary: List securities accounts with valuations and positions
+      tags:
+        - Securities
+
+      parameters:
+        - name: customerID
+          in: header
+          required: true
+          description: Customer ID
+          schema:
+            type: string
+        - name: asOfDate
+          in: query
+          required: true
+          description: As-of date for valuation context (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+
+        - name: includeClosed
+          in: query
+          required: false
+          description: Whether to include CLOSED securities accounts
+          schema:
+            type: boolean
+            default: false
+
+        - name: size
+          in: query
+          required: false
+          description: Page size
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            nullable: true
+
+        - name: timezone
+          in: query
+          required: false
+          schema:
+            type: string
+            default: Asia/Jerusalem
+
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SecuritiesDocument"
+
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+        "401":
+          description: Unauthorized
+
+        "403":
+          description: Forbidden
+
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+        "504":
+          description: Upstream timeout
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    SecuritiesDocument:
+      type: object
+      required:
+        - _id
+        - customer
+        - data
+      properties:
+        _id:
+          type: string
+          description: Customer ID (MongoDB document ID)
+        customer:
+          $ref: "#/components/schemas/CustomerInfo"
+        data:
+          $ref: "#/components/schemas/SecuritiesData"
+
+    RequestContext:
+      type: object
+      required:
+        - requestId
+        - receivedAt
+        - authorization
+        - query
+      properties:
+        requestId:
+          type: string
+          format: uuid
+        receivedAt:
+          type: string
+          format: date-time
+        authorization:
+          $ref: "#/components/schemas/AuthContext"
+        query:
+          $ref: "#/components/schemas/QueryContext"
+
+    AuthContext:
+      type: object
+      required:
+        - scheme
+        - subjectType
+        - subjectId
+        - scopes
+      properties:
+        scheme:
+          type: string
+        subjectType:
+          type: string
+        subjectId:
+          type: string
+        scopes:
+          type: array
+          items:
+            type: string
+
+    QueryContext:
+      type: object
+      required:
+        - asOfDate
+        - timezone
+        - includeClosed
+        - page
+      properties:
+        asOfDate:
+          type: string
+          format: date
+        timezone:
+          type: string
+        includeClosed:
+          type: boolean
+        page:
+          $ref: "#/components/schemas/PageRequest"
+
+    PageRequest:
+      type: object
+      required:
+        - size
+        - cursor
+      properties:
+        size:
+          type: integer
+        cursor:
+          type: string
+          nullable: true
+
+    CustomerInfo:
+      type: object
+      required:
+        - customerId
+        - cifId
+        - customerType
+        - segment
+        - residencyCountry
+      properties:
+        customerId:
+          type: string
+        cifId:
+          type: string
+        customerType:
+          type: string
+        segment:
+          type: string
+        residencyCountry:
+          type: string
+
+    SecuritiesData:
+      type: object
+      required:
+        - accounts
+        - cifLookup
+      properties:
+        accounts:
+          type: array
+          items:
+            $ref: "#/components/schemas/SecuritiesAccountWithPositions"
+        cifLookup:
+          $ref: "#/components/schemas/CifLookup"
+
+    SecuritiesAccountWithPositions:
+      type: object
+      required:
+        - account
+        - valuation
+        - positionsSummary
+        - positions
+      properties:
+        account:
+          $ref: "#/components/schemas/SecuritiesAccount"
+        valuation:
+          $ref: "#/components/schemas/Valuation"
+        positionsSummary:
+          $ref: "#/components/schemas/PositionsSummary"
+        positions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Position"
+
+    SecuritiesAccount:
+      type: object
+      required:
+        - securitiesAccountId
+        - maskedAccountNumber
+        - accountType
+        - status
+        - baseCurrency
+        - custodian
+        - nickname
+      properties:
+        securitiesAccountId:
+          type: string
+        maskedAccountNumber:
+          type: string
+        accountType:
+          type: string
+          enum:
+            - SECURITIES
+        status:
+          type: string
+          enum:
+            - ACTIVE
+            - CLOSED
+            - BLOCKED
+        baseCurrency:
+          type: string
+        custodian:
+          type: string
+        nickname:
+          type: string
+
+    Valuation:
+      type: object
+      required:
+        - asOf
+        - baseCurrency
+        - marketValueBase
+        - cashBalanceBase
+        - totalValueBase
+      properties:
+        asOf:
+          type: string
+          format: date-time
+        baseCurrency:
+          type: string
+        marketValueBase:
+          type: number
+          format: double
+        cashBalanceBase:
+          type: number
+          format: double
+        totalValueBase:
+          type: number
+          format: double
+
+    PositionsSummary:
+      type: object
+      required:
+        - positionCount
+        - assetClassBreakdown
+      properties:
+        positionCount:
+          type: integer
+        assetClassBreakdown:
+          type: array
+          items:
+            $ref: "#/components/schemas/AssetClassBreakdown"
+
+    AssetClassBreakdown:
+      type: object
+      required:
+        - assetClass
+        - marketValueBase
+        - weightPct
+      properties:
+        assetClass:
+          type: string
+          enum:
+            - EQUITY
+            - ETF
+            - BOND
+            - CASH
+            - OTHER
+        marketValueBase:
+          type: number
+          format: double
+        weightPct:
+          type: number
+          format: double
+
+    Position:
+      type: object
+      required:
+        - positionId
+        - instrument
+        - quantity
+        - averageCost
+        - marketPrice
+        - marketValue
+        - fxRateToBase
+        - marketValueBase
+        - unrealizedPnl
+        - unrealizedPnlBase
+      properties:
+        positionId:
+          type: string
+        instrument:
+          $ref: "#/components/schemas/Instrument"
+        quantity:
+          type: number
+          format: double
+        averageCost:
+          $ref: "#/components/schemas/Money"
+        marketPrice:
+          $ref: "#/components/schemas/MarketPrice"
+        marketValue:
+          $ref: "#/components/schemas/Money"
+        fxRateToBase:
+          $ref: "#/components/schemas/FxRateToBase"
+        marketValueBase:
+          type: number
+          format: double
+        unrealizedPnl:
+          $ref: "#/components/schemas/Money"
+        unrealizedPnlBase:
+          type: number
+          format: double
+
+    Instrument:
+      type: object
+      required:
+        - instrumentId
+        - symbol
+        - isin
+        - name
+        - assetClass
+        - exchange
+        - currency
+      properties:
+        instrumentId:
+          type: string
+        symbol:
+          type: string
+        isin:
+          type: string
+          nullable: true
+        name:
+          type: string
+        assetClass:
+          type: string
+        exchange:
+          type: string
+        currency:
+          type: string
+
+    Money:
+      type: object
+      required:
+        - amount
+        - currency
+      properties:
+        amount:
+          type: number
+          format: double
+        currency:
+          type: string
+
+    MarketPrice:
+      type: object
+      required:
+        - amount
+        - currency
+        - priceTimestamp
+        - source
+      properties:
+        amount:
+          type: number
+          format: double
+        currency:
+          type: string
+        priceTimestamp:
+          type: string
+          format: date-time
+        source:
+          type: string
+          enum:
+            - DELAYED
+            - REALTIME
+            - CLOSE
+
+    FxRateToBase:
+      type: object
+      nullable: true
+      required:
+        - baseCurrency
+        - quoteCurrency
+        - rate
+        - rateTimestamp
+        - source
+      properties:
+        baseCurrency:
+          type: string
+        quoteCurrency:
+          type: string
+        rate:
+          type: number
+          format: double
+        rateTimestamp:
+          type: string
+          format: date-time
+        source:
+          type: string
+
+    CifLookup:
+      type: object
+      required:
+        - source
+        - resolvedAt
+        - eligibleAccountTypes
+        - excludedAccountTypes
+      properties:
+        source:
+          type: string
+        resolvedAt:
+          type: string
+          format: date-time
+        eligibleAccountTypes:
+          type: array
+          items:
+            type: string
+        excludedAccountTypes:
+          type: array
+          items:
+            type: string
+
+    ResponseMetadata:
+      type: object
+      required:
+        - schemaVersion
+        - currencyDecimals
+        - disclaimers
+      properties:
+        schemaVersion:
+          type: string
+        currencyDecimals:
+          type: object
+          additionalProperties:
+            type: integer
+        disclaimers:
+          type: array
+          items:
+            type: string
+
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        correlationId:
+          type: string
+          nullable: true
+        details:
+          type: object
+          additionalProperties: true

@@ -1,0 +1,392 @@
+{
+  "_id": "87234199",
+  "customer": {
+    "customerId": "CUST-87234199",
+    "cifId": "CIF-118802771",
+    "customerType": "RETAIL",
+    "segment": "STANDARD",
+    "residencyCountry": "IL"
+  },
+  "data": {
+    "accounts": [
+      {
+        "account": {
+          "accountId": "ACC-FX-009113330",
+          "iban": "IL12XXXX000000009113330",
+          "maskedAccountNumber": "****3330",
+          "accountType": "CURRENT_FOREIGN",
+          "nickname": "USD Travel Account",
+          "currency": "USD",
+          "status": "ACTIVE",
+          "branch": {
+            "branchCode": "784",
+            "branchName": "Tel Aviv Center"
+          },
+          "owners": [
+            {
+              "customerId": "CUST-87234199",
+              "role": "PRIMARY"
+            }
+          ]
+        },
+        "balances": {
+          "asOf": "2025-12-18T18:12:42.000Z",
+          "available": 4210.55,
+          "current": 4210.55,
+          "creditLimit": 0,
+          "overdraftLimit": 0,
+          "holds": 0
+        },
+        "transactionsSummary": {
+          "fromDate": "2025-12-01",
+          "toDate": "2025-12-18",
+          "transactionCount": 9,
+          "totalDebits": 615.32,
+          "totalCredits": 1500,
+          "largestDebit": {
+            "amount": 220.5,
+            "currency": "USD",
+            "transactionId": "TRX-FX-2a8d1f09",
+            "bookingDate": "2025-12-09",
+            "description": "HOTEL BOOKING"
+          },
+          "largestCredit": {
+            "amount": 1500,
+            "currency": "USD",
+            "transactionId": "TRX-FX-7c2d9011",
+            "bookingDate": "2025-12-03",
+            "description": "TRANSFER FROM ILS ACCOUNT"
+          },
+          "ilsEquivalent": {
+            "totalDebitsIls": 2294.66,
+            "totalCreditsIls": 5592,
+            "fxMethod": "HISTORICAL_RATE_PER_TRANSACTION"
+          }
+        },
+        "transactions": [
+          {
+            "transactionId": "TRX-FX-7c2d9011",
+            "type": "CREDIT",
+            "status": "BOOKED",
+            "amount": 1500,
+            "currency": "USD",
+            "bookingDate": "2025-12-03",
+            "valueDate": "2025-12-03",
+            "description": "TRANSFER FROM ILS ACCOUNT",
+            "merchant": null,
+            "category": {
+              "code": "TRANSFER_INTERNAL",
+              "label": "Internal Transfer"
+            },
+            "counterparty": {
+              "name": "MAIN SALARY ACCOUNT",
+              "bankName": "Discount Bank",
+              "accountMasked": "****2310"
+            },
+            "references": {
+              "bankReference": "BNK-20251203-44011881",
+              "endToEndId": "E2E-1b6a4d2f"
+            },
+            "enrichment": {
+              "normalizedDescription": "Internal Transfer"
+            },
+            "fxRate": {
+              "baseCurrency": "USD",
+              "quoteCurrency": "ILS",
+              "rate": 3.72,
+              "rateTimestamp": "2025-12-03T12:00:00.000Z",
+              "rateType": "MID",
+              "source": "BANK_FX_FIXING",
+              "appliedTo": "VALUE_DATE",
+              "convertedAmountIls": 5580
+            }
+          },
+          {
+            "transactionId": "TRX-FX-2a8d1f09",
+            "type": "DEBIT",
+            "status": "BOOKED",
+            "amount": 220.5,
+            "currency": "USD",
+            "bookingDate": "2025-12-09",
+            "valueDate": "2025-12-09",
+            "description": "HOTEL BOOKING",
+            "merchant": {
+              "name": "CITY HOTEL NYC",
+              "mcc": "7011",
+              "location": {
+                "city": "New York",
+                "country": "US"
+              }
+            },
+            "category": {
+              "code": "TRAVEL_HOTEL",
+              "label": "Hotel"
+            },
+            "counterparty": null,
+            "references": {
+              "bankReference": "BNK-20251209-22050119",
+              "authorizationCode": "AUTH-990112"
+            },
+            "enrichment": {
+              "normalizedDescription": "Hotel",
+              "tags": [
+                "travel"
+              ]
+            },
+            "fxRate": {
+              "baseCurrency": "USD",
+              "quoteCurrency": "ILS",
+              "rate": 3.705,
+              "rateTimestamp": "2025-12-09T12:00:00.000Z",
+              "rateType": "MID",
+              "source": "BANK_FX_FIXING",
+              "appliedTo": "VALUE_DATE",
+              "convertedAmountIls": 816.95
+            }
+          },
+          {
+            "transactionId": "TRX-FX-6c1a3bb0",
+            "type": "DEBIT",
+            "status": "BOOKED",
+            "amount": 34.9,
+            "currency": "USD",
+            "bookingDate": "2025-12-14",
+            "valueDate": "2025-12-14",
+            "description": "COFFEE SHOP",
+            "merchant": {
+              "name": "BLUE CUP COFFEE",
+              "mcc": "5814",
+              "location": {
+                "city": "New York",
+                "country": "US"
+              }
+            },
+            "category": {
+              "code": "FOOD_CAFE",
+              "label": "Cafe"
+            },
+            "counterparty": null,
+            "references": {
+              "bankReference": "BNK-20251214-34900190",
+              "authorizationCode": "AUTH-118220"
+            },
+            "enrichment": {
+              "normalizedDescription": "Cafe",
+              "tags": [
+                "card_present"
+              ]
+            },
+            "fxRate": {
+              "baseCurrency": "USD",
+              "quoteCurrency": "ILS",
+              "rate": 3.69,
+              "rateTimestamp": "2025-12-14T12:00:00.000Z",
+              "rateType": "MID",
+              "source": "BANK_FX_FIXING",
+              "appliedTo": "VALUE_DATE",
+              "convertedAmountIls": 128.78
+            }
+          },
+          {
+            "transactionId": "TRX-FX-0e4c2a11",
+            "type": "DEBIT",
+            "status": "PENDING",
+            "amount": 18.25,
+            "currency": "USD",
+            "bookingDate": null,
+            "valueDate": "2025-12-18",
+            "description": "RIDESHARE",
+            "merchant": {
+              "name": "RIDESHARE INC",
+              "mcc": "4121",
+              "location": {
+                "city": "New York",
+                "country": "US"
+              }
+            },
+            "category": {
+              "code": "TRANSPORT_RIDEHAIL",
+              "label": "Ride Hailing"
+            },
+            "counterparty": null,
+            "references": {
+              "authorizationCode": "AUTH-551902"
+            },
+            "enrichment": {
+              "normalizedDescription": "Ride Hailing",
+              "tags": [
+                "pending"
+              ]
+            },
+            "fxRate": {
+              "baseCurrency": "USD",
+              "quoteCurrency": "ILS",
+              "rate": 3.68,
+              "rateTimestamp": "2025-12-18T12:00:00.000Z",
+              "rateType": "INDICATIVE",
+              "source": "BANK_FX_INTRADAY",
+              "appliedTo": "VALUE_DATE",
+              "convertedAmountIls": 67.16,
+              "isFinal": false
+            }
+          }
+        ],
+        "pagination": {
+          "hasMore": false,
+          "nextCursor": null
+        }
+      },
+      {
+        "account": {
+          "accountId": "ACC-FX-003441007",
+          "iban": "IL12XXXX000000003441007",
+          "maskedAccountNumber": "****1007",
+          "accountType": "CURRENT_FOREIGN",
+          "nickname": "EUR Savings (Daily Use)",
+          "currency": "EUR",
+          "status": "ACTIVE",
+          "branch": {
+            "branchCode": "215",
+            "branchName": "Ramat Gan"
+          },
+          "owners": [
+            {
+              "customerId": "CUST-87234199",
+              "role": "PRIMARY"
+            }
+          ]
+        },
+        "balances": {
+          "asOf": "2025-12-18T18:12:42.000Z",
+          "available": 980.12,
+          "current": 980.12,
+          "creditLimit": 0,
+          "overdraftLimit": 0,
+          "holds": 0
+        },
+        "transactionsSummary": {
+          "fromDate": "2025-12-01",
+          "toDate": "2025-12-18",
+          "transactionCount": 4,
+          "totalDebits": 185,
+          "totalCredits": 500,
+          "largestDebit": {
+            "amount": 120,
+            "currency": "EUR",
+            "transactionId": "TRX-FX-EUR-77a1",
+            "bookingDate": "2025-12-06",
+            "description": "AIRPORT PARKING"
+          },
+          "largestCredit": {
+            "amount": 500,
+            "currency": "EUR",
+            "transactionId": "TRX-FX-EUR-11b2",
+            "bookingDate": "2025-12-02",
+            "description": "TRANSFER FROM ILS ACCOUNT"
+          },
+          "ilsEquivalent": {
+            "totalDebitsIls": 758.5,
+            "totalCreditsIls": 2075,
+            "fxMethod": "HISTORICAL_RATE_PER_TRANSACTION"
+          }
+        },
+        "transactions": [
+          {
+            "transactionId": "TRX-FX-EUR-11b2",
+            "type": "CREDIT",
+            "status": "BOOKED",
+            "amount": 500,
+            "currency": "EUR",
+            "bookingDate": "2025-12-02",
+            "valueDate": "2025-12-02",
+            "description": "TRANSFER FROM ILS ACCOUNT",
+            "merchant": null,
+            "category": {
+              "code": "TRANSFER_INTERNAL",
+              "label": "Internal Transfer"
+            },
+            "counterparty": {
+              "name": "MAIN SALARY ACCOUNT",
+              "bankName": "Discount Bank",
+              "accountMasked": "****2310"
+            },
+            "references": {
+              "bankReference": "BNK-20251202-11001911",
+              "endToEndId": "E2E-90c2f0a1"
+            },
+            "enrichment": {
+              "normalizedDescription": "Internal Transfer"
+            },
+            "fxRate": {
+              "baseCurrency": "EUR",
+              "quoteCurrency": "ILS",
+              "rate": 4.15,
+              "rateTimestamp": "2025-12-02T12:00:00.000Z",
+              "rateType": "MID",
+              "source": "BANK_FX_FIXING",
+              "appliedTo": "VALUE_DATE",
+              "convertedAmountIls": 2075
+            }
+          },
+          {
+            "transactionId": "TRX-FX-EUR-77a1",
+            "type": "DEBIT",
+            "status": "BOOKED",
+            "amount": 120,
+            "currency": "EUR",
+            "bookingDate": "2025-12-06",
+            "valueDate": "2025-12-06",
+            "description": "AIRPORT PARKING",
+            "merchant": {
+              "name": "AIRPORT PARKING",
+              "mcc": "7523",
+              "location": {
+                "city": "Rome",
+                "country": "IT"
+              }
+            },
+            "category": {
+              "code": "TRANSPORT_PARKING",
+              "label": "Parking"
+            },
+            "counterparty": null,
+            "references": {
+              "bankReference": "BNK-20251206-12000011",
+              "authorizationCode": "AUTH-771100"
+            },
+            "enrichment": {
+              "normalizedDescription": "Parking"
+            },
+            "fxRate": {
+              "baseCurrency": "EUR",
+              "quoteCurrency": "ILS",
+              "rate": 4.11,
+              "rateTimestamp": "2025-12-06T12:00:00.000Z",
+              "rateType": "MID",
+              "source": "BANK_FX_FIXING",
+              "appliedTo": "VALUE_DATE",
+              "convertedAmountIls": 493.2
+            }
+          }
+        ],
+        "pagination": {
+          "hasMore": false,
+          "nextCursor": null
+        }
+      }
+    ]
+  },
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "currencyDecimals": {
+      "ILS": 2,
+      "USD": 2,
+      "EUR": 2
+    },
+    "disclaimers": [
+      "Pending transactions may change before final booking.",
+      "FX rates are indicative for pending transactions and may be finalized at booking.",
+      "Converted ILS amounts are calculated per transaction based on the provided historical/indicative rate."
+    ]
+  }
+}

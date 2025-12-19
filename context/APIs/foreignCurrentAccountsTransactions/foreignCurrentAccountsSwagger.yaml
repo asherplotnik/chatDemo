@@ -1,0 +1,685 @@
+openapi: 3.0.3
+
+info:
+  title: Foreign Current Accounts Transactions API
+  version: 1.0.0
+  description: >
+    Returns foreign-currency current accounts with transactions for the authenticated customer,
+    including FX rate details and ILS converted amounts per transaction.
+
+servers:
+  - url: https://api.bank.example.com
+    description: Production
+  - url: https://sandbox.api.bank.example.com
+    description: Sandbox
+
+security:
+  - bearerAuth: []
+
+paths:
+  /v1/foreign-current-accounts/transactions:
+    get:
+      operationId: getForeignCurrentAccountsTransactions
+      summary: List foreign current accounts with transactions and FX rates to ILS
+      tags:
+        - Foreign Current Accounts
+        - Transactions
+        - FX
+
+      parameters:
+        - name: customerID
+          in: header
+          required: true
+          description: Customer ID
+          schema:
+            type: string
+        - name: fromDate
+          in: query
+          required: true
+          description: Inclusive start date
+          schema:
+            type: string
+            format: date
+
+        - name: toDate
+          in: query
+          required: true
+          description: Inclusive end date
+          schema:
+            type: string
+            format: date
+
+        - name: includePending
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: true
+
+        - name: size
+          in: query
+          required: false
+          description: Page size per account
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 100
+
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            nullable: true
+
+        - name: timezone
+          in: query
+          required: false
+          schema:
+            type: string
+            default: Asia/Jerusalem
+
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ForeignAccountsTransactionsDocument"
+
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+        "401":
+          description: Unauthorized
+
+        "403":
+          description: Forbidden
+
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+        "504":
+          description: Upstream timeout
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ForeignAccountsTransactionsDocument:
+      type: object
+      required:
+        - _id
+        - customer
+        - data
+      properties:
+        _id:
+          type: string
+          description: Customer ID (MongoDB document ID)
+        customer:
+          $ref: "#/components/schemas/CustomerInfo"
+        data:
+          $ref: "#/components/schemas/ForeignAccountsTransactionsData"
+
+    RequestContext:
+      type: object
+      required:
+        - requestId
+        - receivedAt
+        - authorization
+        - query
+      properties:
+        requestId:
+          type: string
+          format: uuid
+        receivedAt:
+          type: string
+          format: date-time
+        authorization:
+          $ref: "#/components/schemas/AuthContext"
+        query:
+          $ref: "#/components/schemas/QueryContext"
+
+    AuthContext:
+      type: object
+      required:
+        - scheme
+        - subjectType
+        - subjectId
+        - scopes
+      properties:
+        scheme:
+          type: string
+          example: Bearer
+        subjectType:
+          type: string
+          example: customer
+        subjectId:
+          type: string
+        scopes:
+          type: array
+          items:
+            type: string
+
+    QueryContext:
+      type: object
+      required:
+        - fromDate
+        - toDate
+        - timezone
+        - includePending
+        - page
+      properties:
+        fromDate:
+          type: string
+          format: date
+        toDate:
+          type: string
+          format: date
+        timezone:
+          type: string
+        includePending:
+          type: boolean
+        page:
+          $ref: "#/components/schemas/PageRequest"
+
+    PageRequest:
+      type: object
+      required:
+        - size
+        - cursor
+      properties:
+        size:
+          type: integer
+        cursor:
+          type: string
+          nullable: true
+
+    CustomerInfo:
+      type: object
+      required:
+        - customerId
+        - cifId
+        - customerType
+        - segment
+        - residencyCountry
+      properties:
+        customerId:
+          type: string
+        cifId:
+          type: string
+        customerType:
+          type: string
+          enum:
+            - RETAIL
+            - BUSINESS
+        segment:
+          type: string
+        residencyCountry:
+          type: string
+
+    ForeignAccountsTransactionsData:
+      type: object
+      required:
+        - accounts
+        - cifLookup
+      properties:
+        accounts:
+          type: array
+          items:
+            $ref: "#/components/schemas/ForeignAccountWithTransactions"
+        cifLookup:
+          $ref: "#/components/schemas/CifLookup"
+
+    ForeignAccountWithTransactions:
+      type: object
+      required:
+        - account
+        - balances
+        - transactionsSummary
+        - transactions
+        - pagination
+      properties:
+        account:
+          $ref: "#/components/schemas/ForeignAccount"
+        balances:
+          $ref: "#/components/schemas/Balances"
+        transactionsSummary:
+          $ref: "#/components/schemas/ForeignTransactionsSummary"
+        transactions:
+          type: array
+          items:
+            $ref: "#/components/schemas/ForeignTransaction"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    ForeignAccount:
+      type: object
+      required:
+        - accountId
+        - iban
+        - maskedAccountNumber
+        - accountType
+        - currency
+        - status
+        - branch
+        - owners
+      properties:
+        accountId:
+          type: string
+        iban:
+          type: string
+        maskedAccountNumber:
+          type: string
+        accountType:
+          type: string
+          enum:
+            - CURRENT_FOREIGN
+        nickname:
+          type: string
+          nullable: true
+        currency:
+          type: string
+        status:
+          type: string
+          enum:
+            - ACTIVE
+            - BLOCKED
+            - CLOSED
+        branch:
+          $ref: "#/components/schemas/Branch"
+        owners:
+          type: array
+          items:
+            $ref: "#/components/schemas/Owner"
+
+    Branch:
+      type: object
+      required:
+        - branchCode
+        - branchName
+      properties:
+        branchCode:
+          type: string
+        branchName:
+          type: string
+
+    Owner:
+      type: object
+      required:
+        - customerId
+        - role
+      properties:
+        customerId:
+          type: string
+        role:
+          type: string
+          enum:
+            - PRIMARY
+            - JOINT
+            - AUTHORIZED
+
+    Balances:
+      type: object
+      required:
+        - asOf
+        - available
+        - current
+        - creditLimit
+        - overdraftLimit
+        - holds
+      properties:
+        asOf:
+          type: string
+          format: date-time
+        available:
+          type: number
+          format: double
+        current:
+          type: number
+          format: double
+        creditLimit:
+          type: number
+          format: double
+        overdraftLimit:
+          type: number
+          format: double
+        holds:
+          type: number
+          format: double
+
+    ForeignTransactionsSummary:
+      type: object
+      required:
+        - fromDate
+        - toDate
+        - transactionCount
+        - totalDebits
+        - totalCredits
+        - largestDebit
+        - largestCredit
+        - ilsEquivalent
+      properties:
+        fromDate:
+          type: string
+          format: date
+        toDate:
+          type: string
+          format: date
+        transactionCount:
+          type: integer
+        totalDebits:
+          type: number
+          format: double
+        totalCredits:
+          type: number
+          format: double
+        largestDebit:
+          $ref: "#/components/schemas/SummaryTransactionRef"
+        largestCredit:
+          $ref: "#/components/schemas/SummaryTransactionRef"
+        ilsEquivalent:
+          $ref: "#/components/schemas/IlsEquivalentSummary"
+
+    SummaryTransactionRef:
+      type: object
+      required:
+        - amount
+        - currency
+        - transactionId
+        - bookingDate
+        - description
+      properties:
+        amount:
+          type: number
+          format: double
+        currency:
+          type: string
+        transactionId:
+          type: string
+        bookingDate:
+          type: string
+          format: date
+          nullable: true
+        description:
+          type: string
+
+    IlsEquivalentSummary:
+      type: object
+      required:
+        - totalDebitsIls
+        - totalCreditsIls
+        - fxMethod
+      properties:
+        totalDebitsIls:
+          type: number
+          format: double
+        totalCreditsIls:
+          type: number
+          format: double
+        fxMethod:
+          type: string
+
+    ForeignTransaction:
+      type: object
+      required:
+        - transactionId
+        - type
+        - status
+        - amount
+        - currency
+        - bookingDate
+        - valueDate
+        - description
+        - merchant
+        - category
+        - counterparty
+        - references
+        - enrichment
+        - fxRate
+      properties:
+        transactionId:
+          type: string
+        type:
+          type: string
+          enum:
+            - DEBIT
+            - CREDIT
+        status:
+          type: string
+          enum:
+            - BOOKED
+            - PENDING
+            - REVERSED
+        amount:
+          type: number
+          format: double
+        currency:
+          type: string
+        bookingDate:
+          type: string
+          format: date
+          nullable: true
+        valueDate:
+          type: string
+          format: date
+        description:
+          type: string
+        merchant:
+          $ref: "#/components/schemas/Merchant"
+        category:
+          $ref: "#/components/schemas/Category"
+        counterparty:
+          $ref: "#/components/schemas/Counterparty"
+        references:
+          $ref: "#/components/schemas/TransactionReferences"
+        enrichment:
+          $ref: "#/components/schemas/TransactionEnrichment"
+        fxRate:
+          $ref: "#/components/schemas/FxRate"
+
+    Merchant:
+      type: object
+      nullable: true
+      properties:
+        name:
+          type: string
+        mcc:
+          type: string
+          nullable: true
+        location:
+          $ref: "#/components/schemas/Location"
+
+    Location:
+      type: object
+      properties:
+        city:
+          type: string
+          nullable: true
+        country:
+          type: string
+          nullable: true
+
+    Category:
+      type: object
+      nullable: true
+      properties:
+        code:
+          type: string
+        label:
+          type: string
+
+    Counterparty:
+      type: object
+      nullable: true
+      properties:
+        name:
+          type: string
+        bankName:
+          type: string
+          nullable: true
+        accountMasked:
+          type: string
+          nullable: true
+
+    TransactionReferences:
+      type: object
+      nullable: true
+      properties:
+        bankReference:
+          type: string
+          nullable: true
+        endToEndId:
+          type: string
+          nullable: true
+        authorizationCode:
+          type: string
+          nullable: true
+
+    TransactionEnrichment:
+      type: object
+      nullable: true
+      properties:
+        normalizedDescription:
+          type: string
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+
+    FxRate:
+      type: object
+      required:
+        - baseCurrency
+        - quoteCurrency
+        - rate
+        - rateTimestamp
+        - rateType
+        - source
+        - appliedTo
+        - convertedAmountIls
+      properties:
+        baseCurrency:
+          type: string
+        quoteCurrency:
+          type: string
+        rate:
+          type: number
+          format: double
+        rateTimestamp:
+          type: string
+          format: date-time
+        rateType:
+          type: string
+          enum:
+            - MID
+            - BUY
+            - SELL
+            - INDICATIVE
+        source:
+          type: string
+        appliedTo:
+          type: string
+          enum:
+            - VALUE_DATE
+            - BOOKING_DATE
+        convertedAmountIls:
+          type: number
+          format: double
+        isFinal:
+          type: boolean
+          nullable: true
+
+    Pagination:
+      type: object
+      required:
+        - hasMore
+        - nextCursor
+      properties:
+        hasMore:
+          type: boolean
+        nextCursor:
+          type: string
+          nullable: true
+
+    CifLookup:
+      type: object
+      required:
+        - source
+        - resolvedAt
+        - eligibleAccountTypes
+        - excludedAccountTypes
+      properties:
+        source:
+          type: string
+        resolvedAt:
+          type: string
+          format: date-time
+        eligibleAccountTypes:
+          type: array
+          items:
+            type: string
+        excludedAccountTypes:
+          type: array
+          items:
+            type: string
+
+    ResponseMetadata:
+      type: object
+      required:
+        - schemaVersion
+        - currencyDecimals
+        - disclaimers
+      properties:
+        schemaVersion:
+          type: string
+        currencyDecimals:
+          type: object
+          additionalProperties:
+            type: integer
+        disclaimers:
+          type: array
+          items:
+            type: string
+
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        correlationId:
+          type: string
+          nullable: true
+        details:
+          type: object
+          additionalProperties: true

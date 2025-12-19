@@ -1,0 +1,330 @@
+{
+  "_id": "87234199",
+  "customer": {
+    "customerId": "CUST-87234199",
+    "cifId": "CIF-118802771",
+    "customerType": "RETAIL",
+    "segment": "STANDARD",
+    "residencyCountry": "IL"
+  },
+  "data": {
+    "accounts": [
+      {
+        "account": {
+          "accountId": "ACC-001992310",
+          "iban": "IL12XXXX000000001992310",
+          "maskedAccountNumber": "****2310",
+          "accountType": "CURRENT",
+          "nickname": "Main Salary Account",
+          "currency": "ILS",
+          "status": "ACTIVE",
+          "branch": {
+            "branchCode": "784",
+            "branchName": "Tel Aviv Center"
+          },
+          "owners": [
+            {
+              "customerId": "CUST-87234199",
+              "role": "PRIMARY"
+            }
+          ]
+        },
+        "balances": {
+          "asOf": "2025-12-18T17:41:10.000Z",
+          "available": 17842.15,
+          "current": 18210.37,
+          "creditLimit": 0,
+          "overdraftLimit": 5000,
+          "holds": 368.22
+        },
+        "transactionsSummary": {
+          "fromDate": "2025-12-01",
+          "toDate": "2025-12-18",
+          "transactionCount": 14,
+          "totalDebits": 6120.44,
+          "totalCredits": 9800,
+          "largestDebit": {
+            "amount": 2149.9,
+            "currency": "ILS",
+            "transactionId": "TRX-8a0a3d8c",
+            "bookingDate": "2025-12-12",
+            "description": "RENT - DECEMBER"
+          },
+          "largestCredit": {
+            "amount": 9500,
+            "currency": "ILS",
+            "transactionId": "TRX-51b7a1fd",
+            "bookingDate": "2025-12-01",
+            "description": "SALARY ACME LTD"
+          }
+        },
+        "transactions": [
+          {
+            "transactionId": "TRX-51b7a1fd",
+            "type": "CREDIT",
+            "status": "BOOKED",
+            "amount": 9500,
+            "currency": "ILS",
+            "bookingDate": "2025-12-01",
+            "valueDate": "2025-12-01",
+            "description": "SALARY ACME LTD",
+            "merchant": null,
+            "category": {
+              "code": "INCOME_SALARY",
+              "label": "Salary"
+            },
+            "counterparty": {
+              "name": "ACME LTD",
+              "bankName": "Discount Bank",
+              "accountMasked": "****7781"
+            },
+            "references": {
+              "bankReference": "BNK-20251201-88301922",
+              "endToEndId": "E2E-7a8f88a0"
+            },
+            "enrichment": {
+              "normalizedDescription": "Salary",
+              "tags": [
+                "recurring"
+              ]
+            }
+          },
+          {
+            "transactionId": "TRX-8a0a3d8c",
+            "type": "DEBIT",
+            "status": "BOOKED",
+            "amount": 2149.9,
+            "currency": "ILS",
+            "bookingDate": "2025-12-12",
+            "valueDate": "2025-12-12",
+            "description": "RENT - DECEMBER",
+            "merchant": {
+              "name": "LEVY PROPERTIES",
+              "mcc": null,
+              "location": {
+                "city": "Tel Aviv",
+                "country": "IL"
+              }
+            },
+            "category": {
+              "code": "HOUSING_RENT",
+              "label": "Rent"
+            },
+            "counterparty": {
+              "name": "LEVY PROPERTIES",
+              "bankName": "Bank Hapoalim",
+              "accountMasked": "****1102"
+            },
+            "references": {
+              "bankReference": "BNK-20251212-10922911",
+              "endToEndId": "E2E-60a4a9d1"
+            },
+            "enrichment": {
+              "normalizedDescription": "Rent",
+              "tags": [
+                "monthly"
+              ]
+            }
+          },
+          {
+            "transactionId": "TRX-2b93f4c1",
+            "type": "DEBIT",
+            "status": "BOOKED",
+            "amount": 356.22,
+            "currency": "ILS",
+            "bookingDate": "2025-12-14",
+            "valueDate": "2025-12-14",
+            "description": "SUPERMARKET - AM:PM 184",
+            "merchant": {
+              "name": "AM:PM 184",
+              "mcc": "5411",
+              "location": {
+                "city": "Tel Aviv",
+                "country": "IL"
+              }
+            },
+            "category": {
+              "code": "GROCERIES",
+              "label": "Groceries"
+            },
+            "counterparty": null,
+            "references": {
+              "bankReference": "BNK-20251214-22011183"
+            },
+            "enrichment": {
+              "normalizedDescription": "Groceries",
+              "tags": [
+                "card_present"
+              ]
+            }
+          },
+          {
+            "transactionId": "TRX-3f9fd02e",
+            "type": "DEBIT",
+            "status": "PENDING",
+            "amount": 12,
+            "currency": "ILS",
+            "bookingDate": null,
+            "valueDate": "2025-12-18",
+            "description": "PUBLIC TRANSPORT - RAV-KAV",
+            "merchant": {
+              "name": "RAV-KAV",
+              "mcc": "4111",
+              "location": {
+                "city": "Tel Aviv",
+                "country": "IL"
+              }
+            },
+            "category": {
+              "code": "TRANSPORT_PUBLIC",
+              "label": "Public Transport"
+            },
+            "counterparty": null,
+            "references": {
+              "authorizationCode": "AUTH-778201"
+            },
+            "enrichment": {
+              "normalizedDescription": "Public Transport",
+              "tags": [
+                "pending"
+              ]
+            }
+          }
+        ],
+        "pagination": {
+          "hasMore": false,
+          "nextCursor": null
+        }
+      },
+      {
+        "account": {
+          "accountId": "ACC-004771120",
+          "iban": "IL12XXXX000000004771120",
+          "maskedAccountNumber": "****1120",
+          "accountType": "CURRENT",
+          "nickname": "Joint Home Account",
+          "currency": "ILS",
+          "status": "ACTIVE",
+          "branch": {
+            "branchCode": "215",
+            "branchName": "Ramat Gan"
+          },
+          "owners": [
+            {
+              "customerId": "CUST-87234199",
+              "role": "JOINT"
+            },
+            {
+              "customerId": "CUST-55001921",
+              "role": "JOINT"
+            }
+          ]
+        },
+        "balances": {
+          "asOf": "2025-12-18T17:41:10.000Z",
+          "available": 6240.61,
+          "current": 6240.61,
+          "creditLimit": 0,
+          "overdraftLimit": 2000,
+          "holds": 0
+        },
+        "transactionsSummary": {
+          "fromDate": "2025-12-01",
+          "toDate": "2025-12-18",
+          "transactionCount": 6,
+          "totalDebits": 1420.5,
+          "totalCredits": 2500,
+          "largestDebit": {
+            "amount": 610,
+            "currency": "ILS",
+            "transactionId": "TRX-1d02bc44",
+            "bookingDate": "2025-12-10",
+            "description": "ELECTRICITY BILL"
+          },
+          "largestCredit": {
+            "amount": 2500,
+            "currency": "ILS",
+            "transactionId": "TRX-9a312b55",
+            "bookingDate": "2025-12-05",
+            "description": "TRANSFER FROM MAIN ACCOUNT"
+          }
+        },
+        "transactions": [
+          {
+            "transactionId": "TRX-9a312b55",
+            "type": "CREDIT",
+            "status": "BOOKED",
+            "amount": 2500,
+            "currency": "ILS",
+            "bookingDate": "2025-12-05",
+            "valueDate": "2025-12-05",
+            "description": "TRANSFER FROM MAIN ACCOUNT",
+            "merchant": null,
+            "category": {
+              "code": "TRANSFER_INTERNAL",
+              "label": "Internal Transfer"
+            },
+            "counterparty": {
+              "name": "MAIN SALARY ACCOUNT",
+              "bankName": "Discount Bank",
+              "accountMasked": "****2310"
+            },
+            "references": {
+              "bankReference": "BNK-20251205-99188210"
+            },
+            "enrichment": {
+              "normalizedDescription": "Internal Transfer"
+            }
+          },
+          {
+            "transactionId": "TRX-1d02bc44",
+            "type": "DEBIT",
+            "status": "BOOKED",
+            "amount": 610,
+            "currency": "ILS",
+            "bookingDate": "2025-12-10",
+            "valueDate": "2025-12-10",
+            "description": "ELECTRICITY BILL",
+            "merchant": {
+              "name": "IEC - ISRAEL ELECTRIC",
+              "mcc": null,
+              "location": {
+                "city": null,
+                "country": "IL"
+              }
+            },
+            "category": {
+              "code": "UTILITIES_ELECTRICITY",
+              "label": "Electricity"
+            },
+            "counterparty": {
+              "name": "IEC",
+              "bankName": "Discount Bank",
+              "accountMasked": "****9981"
+            },
+            "references": {
+              "bankReference": "BNK-20251210-66028111"
+            },
+            "enrichment": {
+              "normalizedDescription": "Electricity"
+            }
+          }
+        ],
+        "pagination": {
+          "hasMore": false,
+          "nextCursor": null
+        }
+      }
+    ]
+  },
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "currencyDecimals": {
+      "ILS": 2
+    },
+    "disclaimers": [
+      "Pending transactions may change before final booking.",
+      "Enriched categories are best-effort and may be adjusted."
+    ]
+  }
+}

@@ -1,0 +1,169 @@
+{
+  "_id": "87234199",
+  "customer": {
+    "customerId": "CUST-87234199",
+    "cifId": "CIF-118802771",
+    "customerType": "RETAIL",
+    "segment": "STANDARD",
+    "residencyCountry": "IL"
+  },
+  "data": {
+    "mortgages": [
+      {
+        "mortgage": {
+          "mortgageId": "MTG-ILS-00088210",
+          "productType": "HOME_MORTGAGE",
+          "nickname": "Main Home Mortgage",
+          "currency": "ILS",
+          "status": "ACTIVE",
+          "openedDate": "2020-07-01",
+          "maturityDate": "2040-07-01",
+          "property": {
+            "propertyId": "PROP-0001122",
+            "address": {
+              "line1": "12 Herzl St",
+              "line2": "Apt 4",
+              "city": "Ramat Gan",
+              "postalCode": "5252001",
+              "country": "IL"
+            },
+            "propertyType": "APARTMENT"
+          },
+          "principalOriginal": 1200000,
+          "ownership": {
+            "borrowers": [
+              {
+                "customerId": "CUST-87234199",
+                "role": "PRIMARY"
+              },
+              {
+                "customerId": "CUST-55001921",
+                "role": "CO_BORROWER"
+              }
+            ]
+          }
+        },
+        "balances": {
+          "asOf": "2025-12-18T19:18:03.000Z",
+          "principalOutstanding": 932450.55,
+          "accruedInterest": 2140.12,
+          "accruedFees": 0,
+          "totalOutstanding": 934590.67,
+          "nextPayment": {
+            "paymentDate": "2026-01-05",
+            "amount": 6120.44,
+            "currency": "ILS",
+            "breakdown": {
+              "principal": 3720.11,
+              "interest": 2400.33,
+              "fees": 0
+            }
+          }
+        },
+        "accounts": {
+          "paymentAccount": {
+            "accountId": "ACC-001992310",
+            "maskedAccountNumber": "****2310",
+            "currency": "ILS"
+          }
+        },
+        "segments": [
+          {
+            "segmentId": "SEG-001",
+            "segmentType": "PRIME_LINKED",
+            "currency": "ILS",
+            "status": "ACTIVE",
+            "principalOriginal": 500000,
+            "principalOutstanding": 372110.2,
+            "interestRate": {
+              "rateType": "VARIABLE",
+              "annualRate": 0.061,
+              "indexName": "PRIME",
+              "spread": 0.01,
+              "resetFrequency": "MONTHLY",
+              "dayCountConvention": "ACT_365"
+            },
+            "term": {
+              "openedDate": "2020-07-01",
+              "maturityDate": "2030-07-01"
+            }
+          },
+          {
+            "segmentId": "SEG-002",
+            "segmentType": "CPI_LINKED_FIXED",
+            "currency": "ILS",
+            "status": "ACTIVE",
+            "principalOriginal": 700000,
+            "principalOutstanding": 560340.35,
+            "interestRate": {
+              "rateType": "FIXED",
+              "annualRate": 0.036,
+              "indexName": "CPI",
+              "spread": 0,
+              "resetFrequency": null,
+              "dayCountConvention": "ACT_365"
+            },
+            "term": {
+              "openedDate": "2020-07-01",
+              "maturityDate": "2040-07-01"
+            }
+          }
+        ],
+        "features": {
+          "earlyRepayment": {
+            "allowed": true,
+            "feeType": "REGULATORY_CALCULATION",
+            "feeRate": null,
+            "notes": "Early repayment fee is calculated according to regulation and mortgage segment rules."
+          }
+        },
+        "transactionsSummary": {
+          "transactionCount": 3,
+          "totalDebits": 18361.32,
+          "totalCredits": 0,
+          "lastActivityDate": "2025-12-05"
+        },
+        "transactions": [
+          {
+            "transactionId": "MTG-TRX-88210-01",
+            "type": "MORTGAGE_PAYMENT",
+            "status": "BOOKED",
+            "amount": 6120.44,
+            "currency": "ILS",
+            "bookingDate": "2025-12-05",
+            "description": "MONTHLY MORTGAGE PAYMENT"
+          },
+          {
+            "transactionId": "MTG-TRX-88210-02",
+            "type": "MORTGAGE_PAYMENT",
+            "status": "BOOKED",
+            "amount": 6120.44,
+            "currency": "ILS",
+            "bookingDate": "2025-11-05",
+            "description": "MONTHLY MORTGAGE PAYMENT"
+          },
+          {
+            "transactionId": "MTG-TRX-88210-03",
+            "type": "MORTGAGE_PAYMENT",
+            "status": "BOOKED",
+            "amount": 6120.44,
+            "currency": "ILS",
+            "bookingDate": "2025-10-05",
+            "description": "MONTHLY MORTGAGE PAYMENT"
+          }
+        ]
+      }
+    ]
+  },
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "currencyDecimals": {
+      "ILS": 2
+    },
+    "disclaimers": [
+      "Accrued interest is indicative and may change until posting.",
+      "Segment rates and index linkages may affect future payments.",
+      "Early repayment fees may vary by segment and regulation."
+    ]
+  }
+}

@@ -1,0 +1,729 @@
+openapi: 3.0.3
+
+info:
+  title: Credit Cards Summary & Transactions API
+  version: 1.0.0
+  description: >
+    Returns the customer's credit cards, limits, last statement, current balance, and minimal transactions data.
+
+servers:
+  - url: https://api.bank.example.com
+    description: Production
+  - url: https://sandbox.api.bank.example.com
+    description: Sandbox
+
+security:
+  - bearerAuth: []
+
+paths:
+  /v1/credit-cards/transactions:
+    get:
+      operationId: getCreditCardsTransactions
+      summary: List credit cards with balances and minimal transactions
+      tags:
+        - Credit Cards
+        - Transactions
+
+      parameters:
+        - name: customerID
+          in: header
+          required: true
+          description: Customer ID
+          schema:
+            type: string
+        - name: fromDate
+          in: query
+          required: true
+          description: Inclusive start date (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+
+        - name: toDate
+          in: query
+          required: true
+          description: Inclusive end date (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+
+        - name: includePending
+          in: query
+          required: false
+          description: Whether to include pending (unposted) card transactions
+          schema:
+            type: boolean
+            default: true
+
+        - name: size
+          in: query
+          required: false
+          description: Page size per card
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 25
+
+        - name: cursor
+          in: query
+          required: false
+          description: Cursor for pagination per card
+          schema:
+            type: string
+            nullable: true
+
+        - name: timezone
+          in: query
+          required: false
+          schema:
+            type: string
+            default: Asia/Jerusalem
+
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreditCardsDocument"
+
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+        "401":
+          description: Unauthorized
+
+        "403":
+          description: Forbidden
+
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+        "504":
+          description: Upstream timeout
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    CreditCardsDocument:
+      type: object
+      required:
+        - _id
+        - customer
+        - data
+      properties:
+        _id:
+          type: string
+          description: Customer ID (MongoDB document ID)
+        customer:
+          $ref: "#/components/schemas/CustomerInfo"
+        data:
+          $ref: "#/components/schemas/CreditCardsData"
+
+    RequestContext:
+      type: object
+      required:
+        - requestId
+        - receivedAt
+        - authorization
+        - query
+      properties:
+        requestId:
+          type: string
+          format: uuid
+        receivedAt:
+          type: string
+          format: date-time
+        authorization:
+          $ref: "#/components/schemas/AuthContext"
+        query:
+          $ref: "#/components/schemas/QueryContext"
+
+    AuthContext:
+      type: object
+      required:
+        - scheme
+        - subjectType
+        - subjectId
+        - scopes
+      properties:
+        scheme:
+          type: string
+          example: Bearer
+        subjectType:
+          type: string
+          example: customer
+        subjectId:
+          type: string
+        scopes:
+          type: array
+          items:
+            type: string
+
+    QueryContext:
+      type: object
+      required:
+        - fromDate
+        - toDate
+        - timezone
+        - includePending
+        - page
+      properties:
+        fromDate:
+          type: string
+          format: date
+        toDate:
+          type: string
+          format: date
+        timezone:
+          type: string
+        includePending:
+          type: boolean
+        page:
+          $ref: "#/components/schemas/PageRequest"
+
+    PageRequest:
+      type: object
+      required:
+        - size
+        - cursor
+      properties:
+        size:
+          type: integer
+        cursor:
+          type: string
+          nullable: true
+
+    CustomerInfo:
+      type: object
+      required:
+        - customerId
+        - cifId
+        - customerType
+        - segment
+        - residencyCountry
+      properties:
+        customerId:
+          type: string
+        cifId:
+          type: string
+        customerType:
+          type: string
+          enum:
+            - RETAIL
+            - BUSINESS
+        segment:
+          type: string
+        residencyCountry:
+          type: string
+
+    CreditCardsData:
+      type: object
+      required:
+        - cards
+        - cifLookup
+      properties:
+        cards:
+          type: array
+          items:
+            $ref: "#/components/schemas/CardWithSummary"
+        cifLookup:
+          $ref: "#/components/schemas/CifLookup"
+
+    CardWithSummary:
+      type: object
+      required:
+        - card
+        - limits
+        - lastStatement
+        - currentBalance
+        - transactionsSummary
+        - transactions
+        - pagination
+      properties:
+        card:
+          $ref: "#/components/schemas/Card"
+        limits:
+          $ref: "#/components/schemas/CardLimits"
+        lastStatement:
+          $ref: "#/components/schemas/LastStatement"
+        currentBalance:
+          $ref: "#/components/schemas/CurrentBalance"
+        transactionsSummary:
+          $ref: "#/components/schemas/CardTransactionsSummary"
+        transactions:
+          type: array
+          items:
+            $ref: "#/components/schemas/CardTransaction"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    Card:
+      type: object
+      required:
+        - cardId
+        - maskedPan
+        - brand
+        - product
+        - status
+        - cardType
+        - ownerRole
+        - currency
+        - issuer
+        - nickname
+        - billingCycle
+      properties:
+        cardId:
+          type: string
+        maskedPan:
+          type: string
+        brand:
+          type: string
+          enum:
+            - VISA
+            - MASTERCARD
+            - AMEX
+            - DINERS
+            - OTHER
+        product:
+          type: string
+        status:
+          type: string
+          enum:
+            - ACTIVE
+            - BLOCKED
+            - CLOSED
+        cardType:
+          type: string
+          enum:
+            - CREDIT
+            - DEBIT
+            - PREPAID
+        ownerRole:
+          type: string
+          enum:
+            - PRIMARY
+            - JOINT
+            - AUTHORIZED
+        currency:
+          type: string
+        issuer:
+          type: string
+        nickname:
+          type: string
+        billingCycle:
+          $ref: "#/components/schemas/BillingCycle"
+
+    BillingCycle:
+      type: object
+      required:
+        - statementDayOfMonth
+        - paymentDueDaysAfterStatement
+        - nextStatementDate
+        - nextPaymentDueDate
+      properties:
+        statementDayOfMonth:
+          type: integer
+          minimum: 1
+          maximum: 31
+        paymentDueDaysAfterStatement:
+          type: integer
+          minimum: 0
+          maximum: 60
+        nextStatementDate:
+          type: string
+          format: date
+        nextPaymentDueDate:
+          type: string
+          format: date
+
+    CardLimits:
+      type: object
+      required:
+        - creditLimit
+        - availableCredit
+        - cashLimit
+        - availableCash
+      properties:
+        creditLimit:
+          type: number
+          format: double
+        availableCredit:
+          type: number
+          format: double
+        cashLimit:
+          type: number
+          format: double
+        availableCash:
+          type: number
+          format: double
+
+    LastStatement:
+      type: object
+      required:
+        - statementId
+        - statementPeriod
+        - generatedAt
+        - currency
+        - openingBalance
+        - closingBalance
+        - minimumPayment
+        - paymentDueDate
+        - lastPayment
+      properties:
+        statementId:
+          type: string
+        statementPeriod:
+          $ref: "#/components/schemas/StatementPeriod"
+        generatedAt:
+          type: string
+          format: date-time
+        currency:
+          type: string
+        openingBalance:
+          type: number
+          format: double
+        closingBalance:
+          type: number
+          format: double
+        minimumPayment:
+          type: number
+          format: double
+        paymentDueDate:
+          type: string
+          format: date
+        lastPayment:
+          $ref: "#/components/schemas/LastPayment"
+
+    StatementPeriod:
+      type: object
+      required:
+        - fromDate
+        - toDate
+      properties:
+        fromDate:
+          type: string
+          format: date
+        toDate:
+          type: string
+          format: date
+
+    LastPayment:
+      type: object
+      nullable: true
+      required:
+        - paidAt
+        - amount
+        - method
+        - reference
+      properties:
+        paidAt:
+          type: string
+          format: date
+        amount:
+          type: number
+          format: double
+        method:
+          type: string
+          enum:
+            - DIRECT_DEBIT
+            - TRANSFER
+            - CASH
+            - OTHER
+        reference:
+          type: string
+
+    CurrentBalance:
+      type: object
+      required:
+        - asOf
+        - currency
+        - postedBalance
+        - pendingAmount
+        - totalBalance
+      properties:
+        asOf:
+          type: string
+          format: date-time
+        currency:
+          type: string
+        postedBalance:
+          type: number
+          format: double
+        pendingAmount:
+          type: number
+          format: double
+        totalBalance:
+          type: number
+          format: double
+
+    CardTransactionsSummary:
+      type: object
+      required:
+        - fromDate
+        - toDate
+        - transactionCount
+        - totalDebits
+        - totalCredits
+        - largestDebit
+      properties:
+        fromDate:
+          type: string
+          format: date
+        toDate:
+          type: string
+          format: date
+        transactionCount:
+          type: integer
+        totalDebits:
+          type: number
+          format: double
+        totalCredits:
+          type: number
+          format: double
+        largestDebit:
+          $ref: "#/components/schemas/SummaryTransactionRef"
+
+    SummaryTransactionRef:
+      type: object
+      required:
+        - amount
+        - currency
+        - transactionId
+        - bookingDate
+        - description
+      properties:
+        amount:
+          type: number
+          format: double
+        currency:
+          type: string
+        transactionId:
+          type: string
+        bookingDate:
+          type: string
+          format: date
+        description:
+          type: string
+
+    CardTransaction:
+      type: object
+      required:
+        - transactionId
+        - status
+        - type
+        - amount
+        - currency
+        - transactionDate
+        - postingDate
+        - description
+        - merchant
+        - installments
+        - references
+      properties:
+        transactionId:
+          type: string
+        status:
+          type: string
+          enum:
+            - POSTED
+            - PENDING
+            - REVERSED
+        type:
+          type: string
+          enum:
+            - PURCHASE
+            - PAYMENT
+            - REFUND
+            - CASH_WITHDRAWAL
+            - FEE
+            - OTHER
+        amount:
+          type: number
+          format: double
+        currency:
+          type: string
+        transactionDate:
+          type: string
+          format: date
+        postingDate:
+          type: string
+          format: date
+          nullable: true
+        description:
+          type: string
+        merchant:
+          $ref: "#/components/schemas/Merchant"
+        installments:
+          $ref: "#/components/schemas/Installments"
+        references:
+          $ref: "#/components/schemas/CardTransactionReferences"
+
+    Merchant:
+      type: object
+      nullable: true
+      required:
+        - name
+        - mcc
+        - location
+      properties:
+        name:
+          type: string
+        mcc:
+          type: string
+          nullable: true
+        location:
+          $ref: "#/components/schemas/Location"
+
+    Location:
+      type: object
+      required:
+        - city
+        - country
+      properties:
+        city:
+          type: string
+          nullable: true
+        country:
+          type: string
+          nullable: true
+
+    Installments:
+      type: object
+      nullable: true
+      required:
+        - isInstallment
+        - planType
+        - totalInstallments
+        - currentInstallment
+        - installmentAmount
+      properties:
+        isInstallment:
+          type: boolean
+        planType:
+          type: string
+          nullable: true
+          enum:
+            - EQUAL
+            - OTHER
+        totalInstallments:
+          type: integer
+          nullable: true
+        currentInstallment:
+          type: integer
+          nullable: true
+        installmentAmount:
+          type: number
+          format: double
+          nullable: true
+
+    CardTransactionReferences:
+      type: object
+      required:
+        - authorizationCode
+        - rrn
+        - issuerReference
+      properties:
+        authorizationCode:
+          type: string
+          nullable: true
+        rrn:
+          type: string
+          nullable: true
+        issuerReference:
+          type: string
+          nullable: true
+
+    Pagination:
+      type: object
+      required:
+        - hasMore
+        - nextCursor
+      properties:
+        hasMore:
+          type: boolean
+        nextCursor:
+          type: string
+          nullable: true
+
+    CifLookup:
+      type: object
+      required:
+        - source
+        - resolvedAt
+        - eligibleAccountTypes
+        - excludedAccountTypes
+      properties:
+        source:
+          type: string
+        resolvedAt:
+          type: string
+          format: date-time
+        eligibleAccountTypes:
+          type: array
+          items:
+            type: string
+        excludedAccountTypes:
+          type: array
+          items:
+            type: string
+
+    ResponseMetadata:
+      type: object
+      required:
+        - schemaVersion
+        - currencyDecimals
+        - disclaimers
+      properties:
+        schemaVersion:
+          type: string
+        currencyDecimals:
+          type: object
+          additionalProperties:
+            type: integer
+        disclaimers:
+          type: array
+          items:
+            type: string
+
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        correlationId:
+          type: string
+          nullable: true
+        details:
+          type: object
+          additionalProperties: true

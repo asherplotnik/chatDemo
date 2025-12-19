@@ -1,0 +1,254 @@
+{
+  "_id": "87234199",
+  "customer": {
+    "customerId": "CUST-87234199",
+    "cifId": "CIF-118802771",
+    "customerType": "RETAIL",
+    "segment": "STANDARD",
+    "residencyCountry": "IL"
+  },
+  "data": {
+    "accounts": [
+      {
+        "account": {
+          "securitiesAccountId": "SEC-ACC-009911",
+          "maskedAccountNumber": "****9911",
+          "accountType": "SECURITIES",
+          "status": "ACTIVE",
+          "baseCurrency": "ILS",
+          "custodian": "Bank Custody",
+          "nickname": "Main Investments"
+        },
+        "valuation": {
+          "asOf": "2025-12-18T19:27:40.000Z",
+          "baseCurrency": "ILS",
+          "marketValueBase": 186540.22,
+          "cashBalanceBase": 12450,
+          "totalValueBase": 198990.22
+        },
+        "positionsSummary": {
+          "positionCount": 5,
+          "assetClassBreakdown": [
+            {
+              "assetClass": "EQUITY",
+              "marketValueBase": 112340.5,
+              "weightPct": 0.565
+            },
+            {
+              "assetClass": "ETF",
+              "marketValueBase": 70210.12,
+              "weightPct": 0.353
+            },
+            {
+              "assetClass": "BOND",
+              "marketValueBase": 3989.6,
+              "weightPct": 0.02
+            }
+          ]
+        },
+        "positions": [
+          {
+            "positionId": "POS-0001",
+            "instrument": {
+              "instrumentId": "INS-TSLA",
+              "symbol": "TSLA",
+              "isin": "US88160R1014",
+              "name": "Tesla Inc",
+              "assetClass": "EQUITY",
+              "exchange": "NASDAQ",
+              "currency": "USD"
+            },
+            "quantity": 12,
+            "averageCost": {
+              "amount": 225.4,
+              "currency": "USD"
+            },
+            "marketPrice": {
+              "amount": 244.8,
+              "currency": "USD",
+              "priceTimestamp": "2025-12-18T19:25:00.000Z",
+              "source": "DELAYED"
+            },
+            "marketValue": {
+              "amount": 2937.6,
+              "currency": "USD"
+            },
+            "fxRateToBase": {
+              "baseCurrency": "USD",
+              "quoteCurrency": "ILS",
+              "rate": 3.67,
+              "rateTimestamp": "2025-12-18T19:25:00.000Z",
+              "source": "BANK_FX_INTRADAY"
+            },
+            "marketValueBase": 10778.99,
+            "unrealizedPnl": {
+              "amount": 232.8,
+              "currency": "USD"
+            },
+            "unrealizedPnlBase": 854.38
+          },
+          {
+            "positionId": "POS-0002",
+            "instrument": {
+              "instrumentId": "INS-QQQ",
+              "symbol": "QQQ",
+              "isin": "US46090E1038",
+              "name": "Invesco QQQ Trust",
+              "assetClass": "ETF",
+              "exchange": "NASDAQ",
+              "currency": "USD"
+            },
+            "quantity": 25,
+            "averageCost": {
+              "amount": 375.2,
+              "currency": "USD"
+            },
+            "marketPrice": {
+              "amount": 392.1,
+              "currency": "USD",
+              "priceTimestamp": "2025-12-18T19:25:00.000Z",
+              "source": "DELAYED"
+            },
+            "marketValue": {
+              "amount": 9802.5,
+              "currency": "USD"
+            },
+            "fxRateToBase": {
+              "baseCurrency": "USD",
+              "quoteCurrency": "ILS",
+              "rate": 3.67,
+              "rateTimestamp": "2025-12-18T19:25:00.000Z",
+              "source": "BANK_FX_INTRADAY"
+            },
+            "marketValueBase": 35976.18,
+            "unrealizedPnl": {
+              "amount": 422.5,
+              "currency": "USD"
+            },
+            "unrealizedPnlBase": 1550.58
+          },
+          {
+            "positionId": "POS-0003",
+            "instrument": {
+              "instrumentId": "INS-TEVA",
+              "symbol": "TEVA",
+              "isin": "US8816242098",
+              "name": "Teva Pharmaceutical Industries Ltd",
+              "assetClass": "EQUITY",
+              "exchange": "NYSE",
+              "currency": "USD"
+            },
+            "quantity": 200,
+            "averageCost": {
+              "amount": 10.12,
+              "currency": "USD"
+            },
+            "marketPrice": {
+              "amount": 11.04,
+              "currency": "USD",
+              "priceTimestamp": "2025-12-18T19:25:00.000Z",
+              "source": "DELAYED"
+            },
+            "marketValue": {
+              "amount": 2208,
+              "currency": "USD"
+            },
+            "fxRateToBase": {
+              "baseCurrency": "USD",
+              "quoteCurrency": "ILS",
+              "rate": 3.67,
+              "rateTimestamp": "2025-12-18T19:25:00.000Z",
+              "source": "BANK_FX_INTRADAY"
+            },
+            "marketValueBase": 8095.36,
+            "unrealizedPnl": {
+              "amount": 184,
+              "currency": "USD"
+            },
+            "unrealizedPnlBase": 675.28
+          },
+          {
+            "positionId": "POS-0004",
+            "instrument": {
+              "instrumentId": "INS-TASE125",
+              "symbol": "TASE125",
+              "isin": null,
+              "name": "TA-125 Index Tracker",
+              "assetClass": "ETF",
+              "exchange": "TASE",
+              "currency": "ILS"
+            },
+            "quantity": 40,
+            "averageCost": {
+              "amount": 1880,
+              "currency": "ILS"
+            },
+            "marketPrice": {
+              "amount": 1925,
+              "currency": "ILS",
+              "priceTimestamp": "2025-12-18T17:00:00.000Z",
+              "source": "CLOSE"
+            },
+            "marketValue": {
+              "amount": 77000,
+              "currency": "ILS"
+            },
+            "fxRateToBase": null,
+            "marketValueBase": 77000,
+            "unrealizedPnl": {
+              "amount": 1800,
+              "currency": "ILS"
+            },
+            "unrealizedPnlBase": 1800
+          },
+          {
+            "positionId": "POS-0005",
+            "instrument": {
+              "instrumentId": "INS-ILGOV2029",
+              "symbol": "ILGOV2029",
+              "isin": "IL0012345678",
+              "name": "Israel Gov Bond 2029",
+              "assetClass": "BOND",
+              "exchange": "TASE",
+              "currency": "ILS"
+            },
+            "quantity": 1,
+            "averageCost": {
+              "amount": 3989.6,
+              "currency": "ILS"
+            },
+            "marketPrice": {
+              "amount": 4025,
+              "currency": "ILS",
+              "priceTimestamp": "2025-12-18T17:00:00.000Z",
+              "source": "CLOSE"
+            },
+            "marketValue": {
+              "amount": 4025,
+              "currency": "ILS"
+            },
+            "fxRateToBase": null,
+            "marketValueBase": 4025,
+            "unrealizedPnl": {
+              "amount": 35.4,
+              "currency": "ILS"
+            },
+            "unrealizedPnlBase": 35.4
+          }
+        ]
+      }
+    ]
+  },
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "currencyDecimals": {
+      "ILS": 2,
+      "USD": 2
+    },
+    "disclaimers": [
+      "Market prices may be delayed depending on exchange and data vendor.",
+      "FX rates are indicative and may differ from execution rates.",
+      "Values shown are for informational purposes only."
+    ]
+  }
+}

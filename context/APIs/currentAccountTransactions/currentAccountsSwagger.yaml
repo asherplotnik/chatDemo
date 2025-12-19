@@ -1,0 +1,651 @@
+openapi: 3.0.3
+info:
+  title: Current Accounts Transactions API
+  version: 1.0.0
+  description: >
+    Returns current-account transactions for the authenticated customer (subject in Authorization token).
+    The service resolves eligible current accounts via CIF and returns accounts, balances, transactions and summaries.
+servers:
+  - url: https://api.bank.example.com
+    description: Production
+  - url: https://sandbox.api.bank.example.com
+    description: Sandbox
+
+security:
+  - bearerAuth: []
+
+paths:
+  /v1/current-accounts/transactions:
+    get:
+      operationId: getCurrentAccountsTransactions
+      summary: List current accounts with transactions for a date range
+      description: >
+        Uses the Authorization token to resolve the customer, fetches eligible current accounts via CIF,
+        and returns transactions between fromDate and toDate (optionally includes pending).
+      tags:
+        - Current Accounts
+        - Transactions
+      parameters:
+        - name: customerID
+          in: header
+          required: true
+          description: Customer ID
+          schema:
+            type: string
+        - name: fromDate
+          in: query
+          required: true
+          description: Inclusive start date (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+          example: "2025-12-01"
+        - name: toDate
+          in: query
+          required: true
+          description: Inclusive end date (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+          example: "2025-12-18"
+        - name: includePending
+          in: query
+          required: false
+          description: Whether to include pending (unbooked) transactions
+          schema:
+            type: boolean
+            default: true
+          example: true
+        - name: pageSize
+          in: query
+          required: false
+          description: Max number of transactions per account returned in this page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 100
+          example: 100
+        - name: cursor
+          in: query
+          required: false
+          description: Cursor for pagination (per-account pagination is returned in response)
+          schema:
+            type: string
+            nullable: true
+          example: null
+        - name: timezone
+          in: query
+          required: false
+          description: IANA timezone used for date interpretation / enrichment
+          schema:
+            type: string
+            default: Asia/Jerusalem
+          example: "Asia/Jerusalem"
+      responses:
+        "200":
+          description: Accounts and transactions successfully returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountsTransactionsDocument"
+              examples:
+                sample:
+                  summary: Example response
+                  value:
+                    requestContext:
+                      requestId: "3f4b2d9a-2f77-4d87-8ac2-6e8e3fb5a7c1"
+                      receivedAt: "2025-12-18T17:41:12.482Z"
+                      authorization:
+                        scheme: "Bearer"
+                        subjectType: "customer"
+                        subjectId: "CUST-87234199"
+                        scopes: ["accounts:read", "transactions:read"]
+                      query:
+                        fromDate: "2025-12-01"
+                        toDate: "2025-12-18"
+                        timezone: "Asia/Jerusalem"
+                        includePending: true
+                        page:
+                          size: 100
+                          cursor: null
+                    customer:
+                      customerId: "CUST-87234199"
+                      cifId: "CIF-118802771"
+                      customerType: "RETAIL"
+                      segment: "STANDARD"
+                      residencyCountry: "IL"
+                    data:
+                      accounts:
+                        - account:
+                            accountId: "ACC-001992310"
+                            iban: "IL12XXXX000000001992310"
+                            maskedAccountNumber: "****2310"
+                            accountType: "CURRENT"
+                            nickname: "Main Salary Account"
+                            currency: "ILS"
+                            status: "ACTIVE"
+                            branch:
+                              branchCode: "784"
+                              branchName: "Tel Aviv Center"
+                            owners:
+                              - customerId: "CUST-87234199"
+                                role: "PRIMARY"
+                          balances:
+                            asOf: "2025-12-18T17:41:10.000Z"
+                            available: 17842.15
+                            current: 18210.37
+                            creditLimit: 0.0
+                            overdraftLimit: 5000.0
+                            holds: 368.22
+                          transactionsSummary:
+                            fromDate: "2025-12-01"
+                            toDate: "2025-12-18"
+                            transactionCount: 14
+                            totalDebits: 6120.44
+                            totalCredits: 9800.0
+                            largestDebit:
+                              amount: 2149.9
+                              currency: "ILS"
+                              transactionId: "TRX-8a0a3d8c"
+                              bookingDate: "2025-12-12"
+                              description: "RENT - DECEMBER"
+                            largestCredit:
+                              amount: 9500.0
+                              currency: "ILS"
+                              transactionId: "TRX-51b7a1fd"
+                              bookingDate: "2025-12-01"
+                              description: "SALARY ACME LTD"
+                          transactions:
+                            - transactionId: "TRX-51b7a1fd"
+                              type: "CREDIT"
+                              status: "BOOKED"
+                              amount: 9500.0
+                              currency: "ILS"
+                              bookingDate: "2025-12-01"
+                              valueDate: "2025-12-01"
+                              description: "SALARY ACME LTD"
+                              merchant: null
+                              category:
+                                code: "INCOME_SALARY"
+                                label: "Salary"
+                              counterparty:
+                                name: "ACME LTD"
+                                bankName: "Discount Bank"
+                                accountMasked: "****7781"
+                              references:
+                                bankReference: "BNK-20251201-88301922"
+                                endToEndId: "E2E-7a8f88a0"
+                              enrichment:
+                                normalizedDescription: "Salary"
+                                tags: ["recurring"]
+                          pagination:
+                            hasMore: false
+                            nextCursor: null
+                      cifLookup:
+                        source: "CIF"
+                        resolvedAt: "2025-12-18T17:41:10.201Z"
+                        eligibleAccountTypes: ["CURRENT"]
+                        excludedAccountTypes: ["LOAN", "MORTGAGE", "CREDIT_CARD", "INVESTMENT"]
+                    metadata:
+                      schemaVersion: "1.0.0"
+                      currencyDecimals:
+                        ILS: 2
+                      disclaimers:
+                        - "Pending transactions may change before final booking."
+                        - "Enriched categories are best-effort and may be adjusted."
+                    errors: []
+        "400":
+          description: Invalid request (e.g., bad date range)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                invalidDateRange:
+                  value:
+                    code: "INVALID_ARGUMENT"
+                    message: "fromDate must be <= toDate"
+                    correlationId: "3f4b2d9a-2f77-4d87-8ac2-6e8e3fb5a7c1"
+                    details:
+                      field: "fromDate"
+                      reason: "AFTER_TO_DATE"
+        "401":
+          description: Unauthorized (missing/invalid token)
+        "403":
+          description: Forbidden (insufficient scope)
+        "404":
+          description: Not found (customer/account not found in CIF)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Unexpected server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "504":
+          description: Upstream timeout (e.g., CIF/core banking)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    AccountsTransactionsDocument:
+      type: object
+      required: [_id, customer, data]
+      properties:
+        _id:
+          type: string
+          description: Customer ID (MongoDB document ID)
+        customer:
+          $ref: "#/components/schemas/CustomerInfo"
+        data:
+          $ref: "#/components/schemas/AccountsTransactionsData"
+
+    RequestContext:
+      type: object
+      required: [requestId, receivedAt, authorization, query]
+      properties:
+        requestId:
+          type: string
+          format: uuid
+        receivedAt:
+          type: string
+          format: date-time
+        authorization:
+          $ref: "#/components/schemas/AuthContext"
+        query:
+          $ref: "#/components/schemas/QueryContext"
+
+    AuthContext:
+      type: object
+      required: [scheme, subjectType, subjectId]
+      properties:
+        scheme:
+          type: string
+          example: Bearer
+        subjectType:
+          type: string
+          example: customer
+        subjectId:
+          type: string
+          example: CUST-87234199
+        scopes:
+          type: array
+          items:
+            type: string
+
+    QueryContext:
+      type: object
+      required: [fromDate, toDate]
+      properties:
+        fromDate:
+          type: string
+          format: date
+        toDate:
+          type: string
+          format: date
+        timezone:
+          type: string
+          example: Asia/Jerusalem
+        includePending:
+          type: boolean
+          default: true
+        page:
+          $ref: "#/components/schemas/PageRequest"
+
+    PageRequest:
+      type: object
+      required: [size]
+      properties:
+        size:
+          type: integer
+          minimum: 1
+          maximum: 500
+          default: 100
+        cursor:
+          type: string
+          nullable: true
+
+    CustomerInfo:
+      type: object
+      required: [customerId, cifId, customerType]
+      properties:
+        customerId:
+          type: string
+        cifId:
+          type: string
+        customerType:
+          type: string
+          enum: [RETAIL, BUSINESS]
+        segment:
+          type: string
+        residencyCountry:
+          type: string
+          description: ISO-3166 alpha-2
+          example: IL
+
+    AccountsTransactionsData:
+      type: object
+      required: [accounts, cifLookup]
+      properties:
+        accounts:
+          type: array
+          items:
+            $ref: "#/components/schemas/AccountWithTransactions"
+        cifLookup:
+          $ref: "#/components/schemas/CifLookup"
+
+    AccountWithTransactions:
+      type: object
+      required: [account, balances, transactionsSummary, transactions, pagination]
+      properties:
+        account:
+          $ref: "#/components/schemas/Account"
+        balances:
+          $ref: "#/components/schemas/Balances"
+        transactionsSummary:
+          $ref: "#/components/schemas/TransactionsSummary"
+        transactions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Transaction"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    Account:
+      type: object
+      required: [accountId, accountType, currency, status]
+      properties:
+        accountId:
+          type: string
+        iban:
+          type: string
+          nullable: true
+        maskedAccountNumber:
+          type: string
+        accountType:
+          type: string
+          enum: [CURRENT]
+        nickname:
+          type: string
+          nullable: true
+        currency:
+          type: string
+          example: ILS
+        status:
+          type: string
+          enum: [ACTIVE, BLOCKED, CLOSED]
+        branch:
+          $ref: "#/components/schemas/Branch"
+        owners:
+          type: array
+          items:
+            $ref: "#/components/schemas/Owner"
+
+    Branch:
+      type: object
+      properties:
+        branchCode:
+          type: string
+        branchName:
+          type: string
+
+    Owner:
+      type: object
+      required: [customerId, role]
+      properties:
+        customerId:
+          type: string
+        role:
+          type: string
+          enum: [PRIMARY, JOINT, AUTHORIZED]
+
+    Balances:
+      type: object
+      required: [asOf, available, current]
+      properties:
+        asOf:
+          type: string
+          format: date-time
+        available:
+          type: number
+          format: double
+        current:
+          type: number
+          format: double
+        creditLimit:
+          type: number
+          format: double
+          nullable: true
+        overdraftLimit:
+          type: number
+          format: double
+          nullable: true
+        holds:
+          type: number
+          format: double
+          nullable: true
+
+    TransactionsSummary:
+      type: object
+      required: [fromDate, toDate, transactionCount, totalDebits, totalCredits]
+      properties:
+        fromDate:
+          type: string
+          format: date
+        toDate:
+          type: string
+          format: date
+        transactionCount:
+          type: integer
+        totalDebits:
+          type: number
+          format: double
+        totalCredits:
+          type: number
+          format: double
+        largestDebit:
+          $ref: "#/components/schemas/SummaryTransactionRef"
+        largestCredit:
+          $ref: "#/components/schemas/SummaryTransactionRef"
+
+    SummaryTransactionRef:
+      type: object
+      required: [amount, currency, transactionId]
+      properties:
+        amount:
+          type: number
+          format: double
+        currency:
+          type: string
+        transactionId:
+          type: string
+        bookingDate:
+          type: string
+          format: date
+          nullable: true
+        description:
+          type: string
+          nullable: true
+
+    Transaction:
+      type: object
+      required: [transactionId, type, status, amount, currency, valueDate, description]
+      properties:
+        transactionId:
+          type: string
+        type:
+          type: string
+          enum: [DEBIT, CREDIT]
+        status:
+          type: string
+          enum: [BOOKED, PENDING, REVERSED]
+        amount:
+          type: number
+          format: double
+        currency:
+          type: string
+        bookingDate:
+          type: string
+          format: date
+          nullable: true
+        valueDate:
+          type: string
+          format: date
+        description:
+          type: string
+        merchant:
+          $ref: "#/components/schemas/Merchant"
+        category:
+          $ref: "#/components/schemas/Category"
+        counterparty:
+          $ref: "#/components/schemas/Counterparty"
+        references:
+          $ref: "#/components/schemas/TransactionReferences"
+        enrichment:
+          $ref: "#/components/schemas/TransactionEnrichment"
+
+    Merchant:
+      type: object
+      nullable: true
+      properties:
+        name:
+          type: string
+        mcc:
+          type: string
+          nullable: true
+          description: Merchant Category Code
+        location:
+          $ref: "#/components/schemas/Location"
+
+    Location:
+      type: object
+      properties:
+        city:
+          type: string
+          nullable: true
+        country:
+          type: string
+          nullable: true
+          description: ISO-3166 alpha-2
+
+    Category:
+      type: object
+      nullable: true
+      properties:
+        code:
+          type: string
+        label:
+          type: string
+
+    Counterparty:
+      type: object
+      nullable: true
+      properties:
+        name:
+          type: string
+        bankName:
+          type: string
+          nullable: true
+        accountMasked:
+          type: string
+          nullable: true
+
+    TransactionReferences:
+      type: object
+      nullable: true
+      properties:
+        bankReference:
+          type: string
+          nullable: true
+        endToEndId:
+          type: string
+          nullable: true
+        authorizationCode:
+          type: string
+          nullable: true
+
+    TransactionEnrichment:
+      type: object
+      nullable: true
+      properties:
+        normalizedDescription:
+          type: string
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+
+    Pagination:
+      type: object
+      required: [hasMore]
+      properties:
+        hasMore:
+          type: boolean
+        nextCursor:
+          type: string
+          nullable: true
+
+    CifLookup:
+      type: object
+      required: [source, resolvedAt]
+      properties:
+        source:
+          type: string
+          example: CIF
+        resolvedAt:
+          type: string
+          format: date-time
+        eligibleAccountTypes:
+          type: array
+          items:
+            type: string
+        excludedAccountTypes:
+          type: array
+          items:
+            type: string
+
+    ResponseMetadata:
+      type: object
+      required: [schemaVersion]
+      properties:
+        schemaVersion:
+          type: string
+        currencyDecimals:
+          type: object
+          additionalProperties:
+            type: integer
+        disclaimers:
+          type: array
+          items:
+            type: string
+
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          example: UPSTREAM_TIMEOUT
+        message:
+          type: string
+          example: CIF service timeout
+        correlationId:
+          type: string
+          nullable: true
+        details:
+          type: object
+          additionalProperties: true

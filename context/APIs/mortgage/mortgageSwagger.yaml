@@ -1,0 +1,709 @@
+openapi: 3.0.3
+
+info:
+  title: Mortgages API
+  version: 1.0.0
+  description: >
+    Returns the customer's mortgages, balances, mortgage segments, features, and minimal payment transactions.
+
+servers:
+  - url: https://api.bank.example.com
+    description: Production
+  - url: https://sandbox.api.bank.example.com
+    description: Sandbox
+
+security:
+  - bearerAuth: []
+
+paths:
+  /v1/mortgages:
+    get:
+      operationId: getMortgages
+      summary: List customer mortgages with balances, segments and minimal transactions
+      tags:
+        - Mortgages
+
+      parameters:
+        - name: customerID
+          in: header
+          required: true
+          description: Customer ID
+          schema:
+            type: string
+        - name: asOfDate
+          in: query
+          required: true
+          description: As-of date for balances/enrichment (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+
+        - name: includeClosed
+          in: query
+          required: false
+          description: Whether to include CLOSED mortgages
+          schema:
+            type: boolean
+            default: false
+
+        - name: size
+          in: query
+          required: false
+          description: Page size
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+
+        - name: cursor
+          in: query
+          required: false
+          description: Cursor for pagination
+          schema:
+            type: string
+            nullable: true
+
+        - name: timezone
+          in: query
+          required: false
+          schema:
+            type: string
+            default: Asia/Jerusalem
+
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MortgagesDocument"
+
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+        "401":
+          description: Unauthorized
+
+        "403":
+          description: Forbidden
+
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+        "504":
+          description: Upstream timeout
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    MortgagesDocument:
+      type: object
+      required:
+        - _id
+        - customer
+        - data
+      properties:
+        _id:
+          type: string
+          description: Customer ID (MongoDB document ID)
+        customer:
+          $ref: "#/components/schemas/CustomerInfo"
+        data:
+          $ref: "#/components/schemas/MortgagesData"
+
+    RequestContext:
+      type: object
+      required:
+        - requestId
+        - receivedAt
+        - authorization
+        - query
+      properties:
+        requestId:
+          type: string
+          format: uuid
+        receivedAt:
+          type: string
+          format: date-time
+        authorization:
+          $ref: "#/components/schemas/AuthContext"
+        query:
+          $ref: "#/components/schemas/QueryContext"
+
+    AuthContext:
+      type: object
+      required:
+        - scheme
+        - subjectType
+        - subjectId
+        - scopes
+      properties:
+        scheme:
+          type: string
+          example: Bearer
+        subjectType:
+          type: string
+          example: customer
+        subjectId:
+          type: string
+        scopes:
+          type: array
+          items:
+            type: string
+
+    QueryContext:
+      type: object
+      required:
+        - asOfDate
+        - timezone
+        - includeClosed
+        - page
+      properties:
+        asOfDate:
+          type: string
+          format: date
+        timezone:
+          type: string
+        includeClosed:
+          type: boolean
+        page:
+          $ref: "#/components/schemas/PageRequest"
+
+    PageRequest:
+      type: object
+      required:
+        - size
+        - cursor
+      properties:
+        size:
+          type: integer
+        cursor:
+          type: string
+          nullable: true
+
+    CustomerInfo:
+      type: object
+      required:
+        - customerId
+        - cifId
+        - customerType
+        - segment
+        - residencyCountry
+      properties:
+        customerId:
+          type: string
+        cifId:
+          type: string
+        customerType:
+          type: string
+          enum:
+            - RETAIL
+            - BUSINESS
+        segment:
+          type: string
+        residencyCountry:
+          type: string
+
+    MortgagesData:
+      type: object
+      required:
+        - mortgages
+        - cifLookup
+      properties:
+        mortgages:
+          type: array
+          items:
+            $ref: "#/components/schemas/MortgageWithDetails"
+        cifLookup:
+          $ref: "#/components/schemas/CifLookup"
+
+    MortgageWithDetails:
+      type: object
+      required:
+        - mortgage
+        - balances
+        - accounts
+        - segments
+        - features
+        - transactionsSummary
+        - transactions
+      properties:
+        mortgage:
+          $ref: "#/components/schemas/Mortgage"
+        balances:
+          $ref: "#/components/schemas/MortgageBalances"
+        accounts:
+          $ref: "#/components/schemas/MortgageAccounts"
+        segments:
+          type: array
+          items:
+            $ref: "#/components/schemas/MortgageSegment"
+        features:
+          $ref: "#/components/schemas/MortgageFeatures"
+        transactionsSummary:
+          $ref: "#/components/schemas/MortgageTransactionsSummary"
+        transactions:
+          type: array
+          items:
+            $ref: "#/components/schemas/MortgageTransaction"
+
+    Mortgage:
+      type: object
+      required:
+        - mortgageId
+        - productType
+        - nickname
+        - currency
+        - status
+        - openedDate
+        - maturityDate
+        - property
+        - principalOriginal
+        - ownership
+      properties:
+        mortgageId:
+          type: string
+        productType:
+          type: string
+          enum:
+            - HOME_MORTGAGE
+            - INVESTMENT_PROPERTY_MORTGAGE
+            - REFINANCE_MORTGAGE
+            - OTHER
+        nickname:
+          type: string
+        currency:
+          type: string
+        status:
+          type: string
+          enum:
+            - ACTIVE
+            - CLOSED
+            - DELINQUENT
+            - RESTRUCTURED
+        openedDate:
+          type: string
+          format: date
+        maturityDate:
+          type: string
+          format: date
+        property:
+          $ref: "#/components/schemas/Property"
+        principalOriginal:
+          type: number
+          format: double
+        ownership:
+          $ref: "#/components/schemas/MortgageOwnership"
+
+    Property:
+      type: object
+      required:
+        - propertyId
+        - address
+        - propertyType
+      properties:
+        propertyId:
+          type: string
+        address:
+          $ref: "#/components/schemas/PostalAddress"
+        propertyType:
+          type: string
+          enum:
+            - APARTMENT
+            - HOUSE
+            - LAND
+            - OTHER
+
+    PostalAddress:
+      type: object
+      required:
+        - line1
+        - line2
+        - city
+        - postalCode
+        - country
+      properties:
+        line1:
+          type: string
+        line2:
+          type: string
+          nullable: true
+        city:
+          type: string
+        postalCode:
+          type: string
+        country:
+          type: string
+
+    MortgageOwnership:
+      type: object
+      required:
+        - borrowers
+      properties:
+        borrowers:
+          type: array
+          items:
+            $ref: "#/components/schemas/Borrower"
+
+    Borrower:
+      type: object
+      required:
+        - customerId
+        - role
+      properties:
+        customerId:
+          type: string
+        role:
+          type: string
+          enum:
+            - PRIMARY
+            - CO_BORROWER
+            - GUARANTOR
+
+    MortgageBalances:
+      type: object
+      required:
+        - asOf
+        - principalOutstanding
+        - accruedInterest
+        - accruedFees
+        - totalOutstanding
+        - nextPayment
+      properties:
+        asOf:
+          type: string
+          format: date-time
+        principalOutstanding:
+          type: number
+          format: double
+        accruedInterest:
+          type: number
+          format: double
+        accruedFees:
+          type: number
+          format: double
+        totalOutstanding:
+          type: number
+          format: double
+        nextPayment:
+          $ref: "#/components/schemas/NextPayment"
+
+    NextPayment:
+      type: object
+      required:
+        - paymentDate
+        - amount
+        - currency
+        - breakdown
+      properties:
+        paymentDate:
+          type: string
+          format: date
+        amount:
+          type: number
+          format: double
+        currency:
+          type: string
+        breakdown:
+          $ref: "#/components/schemas/PaymentBreakdown"
+
+    PaymentBreakdown:
+      type: object
+      required:
+        - principal
+        - interest
+        - fees
+      properties:
+        principal:
+          type: number
+          format: double
+        interest:
+          type: number
+          format: double
+        fees:
+          type: number
+          format: double
+
+    MortgageAccounts:
+      type: object
+      required:
+        - paymentAccount
+      properties:
+        paymentAccount:
+          $ref: "#/components/schemas/PaymentAccount"
+
+    PaymentAccount:
+      type: object
+      required:
+        - accountId
+        - maskedAccountNumber
+        - currency
+      properties:
+        accountId:
+          type: string
+        maskedAccountNumber:
+          type: string
+        currency:
+          type: string
+
+    MortgageSegment:
+      type: object
+      required:
+        - segmentId
+        - segmentType
+        - currency
+        - status
+        - principalOriginal
+        - principalOutstanding
+        - interestRate
+        - term
+      properties:
+        segmentId:
+          type: string
+        segmentType:
+          type: string
+          enum:
+            - PRIME_LINKED
+            - CPI_LINKED_FIXED
+            - FIXED_UNLINKED
+            - FOREIGN_CURRENCY_LINKED
+            - OTHER
+        currency:
+          type: string
+        status:
+          type: string
+          enum:
+            - ACTIVE
+            - CLOSED
+        principalOriginal:
+          type: number
+          format: double
+        principalOutstanding:
+          type: number
+          format: double
+        interestRate:
+          $ref: "#/components/schemas/MortgageInterestRate"
+        term:
+          $ref: "#/components/schemas/SegmentTerm"
+
+    MortgageInterestRate:
+      type: object
+      required:
+        - rateType
+        - annualRate
+        - indexName
+        - spread
+        - resetFrequency
+        - dayCountConvention
+      properties:
+        rateType:
+          type: string
+          enum:
+            - FIXED
+            - VARIABLE
+        annualRate:
+          type: number
+          format: double
+        indexName:
+          type: string
+          nullable: true
+        spread:
+          type: number
+          format: double
+        resetFrequency:
+          type: string
+          nullable: true
+          enum:
+            - MONTHLY
+            - QUARTERLY
+            - ANNUALLY
+        dayCountConvention:
+          type: string
+          enum:
+            - ACT_365
+            - ACT_360
+            - THIRTY_360
+
+    SegmentTerm:
+      type: object
+      required:
+        - openedDate
+        - maturityDate
+      properties:
+        openedDate:
+          type: string
+          format: date
+        maturityDate:
+          type: string
+          format: date
+
+    MortgageFeatures:
+      type: object
+      required:
+        - earlyRepayment
+      properties:
+        earlyRepayment:
+          $ref: "#/components/schemas/EarlyRepayment"
+
+    EarlyRepayment:
+      type: object
+      required:
+        - allowed
+        - feeType
+        - feeRate
+        - notes
+      properties:
+        allowed:
+          type: boolean
+        feeType:
+          type: string
+          enum:
+            - NONE
+            - REGULATORY_CALCULATION
+            - FIXED_FEE
+            - PERCENT_OF_OUTSTANDING
+        feeRate:
+          type: number
+          format: double
+          nullable: true
+        notes:
+          type: string
+
+    MortgageTransactionsSummary:
+      type: object
+      required:
+        - transactionCount
+        - totalDebits
+        - totalCredits
+        - lastActivityDate
+      properties:
+        transactionCount:
+          type: integer
+        totalDebits:
+          type: number
+          format: double
+        totalCredits:
+          type: number
+          format: double
+        lastActivityDate:
+          type: string
+          format: date
+
+    MortgageTransaction:
+      type: object
+      required:
+        - transactionId
+        - type
+        - status
+        - amount
+        - currency
+        - bookingDate
+        - description
+      properties:
+        transactionId:
+          type: string
+        type:
+          type: string
+          enum:
+            - MORTGAGE_PAYMENT
+            - EARLY_REPAYMENT
+            - FEE
+            - ADJUSTMENT
+        status:
+          type: string
+          enum:
+            - BOOKED
+            - PENDING
+            - REVERSED
+        amount:
+          type: number
+          format: double
+        currency:
+          type: string
+        bookingDate:
+          type: string
+          format: date
+        description:
+          type: string
+
+    CifLookup:
+      type: object
+      required:
+        - source
+        - resolvedAt
+        - eligibleAccountTypes
+        - excludedAccountTypes
+      properties:
+        source:
+          type: string
+        resolvedAt:
+          type: string
+          format: date-time
+        eligibleAccountTypes:
+          type: array
+          items:
+            type: string
+        excludedAccountTypes:
+          type: array
+          items:
+            type: string
+
+    ResponseMetadata:
+      type: object
+      required:
+        - schemaVersion
+        - currencyDecimals
+        - disclaimers
+      properties:
+        schemaVersion:
+          type: string
+        currencyDecimals:
+          type: object
+          additionalProperties:
+            type: integer
+        disclaimers:
+          type: array
+          items:
+            type: string
+
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        correlationId:
+          type: string
+          nullable: true
+        details:
+          type: object
+          additionalProperties: true

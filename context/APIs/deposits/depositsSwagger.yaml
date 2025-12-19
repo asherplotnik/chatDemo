@@ -1,0 +1,586 @@
+openapi: 3.0.3
+
+info:
+  title: Deposits API
+  version: 1.0.0
+  description: >
+    Returns the customer's deposits (term deposits and savings deposits), including balances, features, and minimal transactions.
+
+servers:
+  - url: https://api.bank.example.com
+    description: Production
+  - url: https://sandbox.api.bank.example.com
+    description: Sandbox
+
+security:
+  - bearerAuth: []
+
+paths:
+  /v1/deposits:
+    get:
+      operationId: getDeposits
+      summary: List customer deposits with balances and minimal transactions
+      tags:
+        - Deposits
+
+      parameters:
+        - name: customerID
+          in: header
+          required: true
+          description: Customer ID
+          schema:
+            type: string
+        - name: asOfDate
+          in: query
+          required: true
+          description: As-of date for balances/enrichment (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+
+        - name: includeClosed
+          in: query
+          required: false
+          description: Whether to include CLOSED deposits
+          schema:
+            type: boolean
+            default: false
+
+        - name: size
+          in: query
+          required: false
+          description: Page size
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+
+        - name: cursor
+          in: query
+          required: false
+          description: Cursor for pagination
+          schema:
+            type: string
+            nullable: true
+
+        - name: timezone
+          in: query
+          required: false
+          schema:
+            type: string
+            default: Asia/Jerusalem
+
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DepositsDocument"
+
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+        "401":
+          description: Unauthorized
+
+        "403":
+          description: Forbidden
+
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+        "504":
+          description: Upstream timeout
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    DepositsDocument:
+      type: object
+      required:
+        - _id
+        - customer
+        - data
+      properties:
+        _id:
+          type: string
+          description: Customer ID (MongoDB document ID)
+        customer:
+          $ref: "#/components/schemas/CustomerInfo"
+        data:
+          $ref: "#/components/schemas/DepositsData"
+
+    RequestContext:
+      type: object
+      required:
+        - requestId
+        - receivedAt
+        - authorization
+        - query
+      properties:
+        requestId:
+          type: string
+          format: uuid
+        receivedAt:
+          type: string
+          format: date-time
+        authorization:
+          $ref: "#/components/schemas/AuthContext"
+        query:
+          $ref: "#/components/schemas/QueryContext"
+
+    AuthContext:
+      type: object
+      required:
+        - scheme
+        - subjectType
+        - subjectId
+        - scopes
+      properties:
+        scheme:
+          type: string
+          example: Bearer
+        subjectType:
+          type: string
+          example: customer
+        subjectId:
+          type: string
+        scopes:
+          type: array
+          items:
+            type: string
+
+    QueryContext:
+      type: object
+      required:
+        - asOfDate
+        - timezone
+        - includeClosed
+        - page
+      properties:
+        asOfDate:
+          type: string
+          format: date
+        timezone:
+          type: string
+        includeClosed:
+          type: boolean
+        page:
+          $ref: "#/components/schemas/PageRequest"
+
+    PageRequest:
+      type: object
+      required:
+        - size
+        - cursor
+      properties:
+        size:
+          type: integer
+        cursor:
+          type: string
+          nullable: true
+
+    CustomerInfo:
+      type: object
+      required:
+        - customerId
+        - cifId
+        - customerType
+        - segment
+        - residencyCountry
+      properties:
+        customerId:
+          type: string
+        cifId:
+          type: string
+        customerType:
+          type: string
+          enum:
+            - RETAIL
+            - BUSINESS
+        segment:
+          type: string
+        residencyCountry:
+          type: string
+
+    DepositsData:
+      type: object
+      required:
+        - deposits
+        - cifLookup
+      properties:
+        deposits:
+          type: array
+          items:
+            $ref: "#/components/schemas/DepositWithDetails"
+        cifLookup:
+          $ref: "#/components/schemas/CifLookup"
+
+    DepositWithDetails:
+      type: object
+      required:
+        - deposit
+        - balances
+        - features
+        - transactionsSummary
+        - transactions
+      properties:
+        deposit:
+          $ref: "#/components/schemas/Deposit"
+        balances:
+          $ref: "#/components/schemas/DepositBalances"
+        features:
+          $ref: "#/components/schemas/DepositFeatures"
+        transactionsSummary:
+          $ref: "#/components/schemas/DepositTransactionsSummary"
+        transactions:
+          type: array
+          items:
+            $ref: "#/components/schemas/DepositTransaction"
+
+    Deposit:
+      type: object
+      required:
+        - depositId
+        - productType
+        - nickname
+        - currency
+        - status
+        - openedDate
+        - maturityDate
+        - tenorDays
+        - principal
+        - interestRate
+        - payout
+        - ownership
+      properties:
+        depositId:
+          type: string
+        productType:
+          type: string
+          enum:
+            - TERM_DEPOSIT
+            - SAVINGS_DEPOSIT
+        nickname:
+          type: string
+        currency:
+          type: string
+        status:
+          type: string
+          enum:
+            - ACTIVE
+            - CLOSED
+            - BLOCKED
+        openedDate:
+          type: string
+          format: date
+        maturityDate:
+          type: string
+          format: date
+          nullable: true
+        tenorDays:
+          type: integer
+          nullable: true
+        principal:
+          type: number
+          format: double
+        interestRate:
+          $ref: "#/components/schemas/InterestRate"
+        payout:
+          $ref: "#/components/schemas/DepositPayout"
+        ownership:
+          $ref: "#/components/schemas/DepositOwnership"
+
+    InterestRate:
+      type: object
+      required:
+        - rateType
+        - annualRate
+        - dayCountConvention
+      properties:
+        rateType:
+          type: string
+          enum:
+            - FIXED
+            - VARIABLE
+        annualRate:
+          type: number
+          format: double
+        dayCountConvention:
+          type: string
+          enum:
+            - ACT_365
+            - ACT_360
+            - THIRTY_360
+
+    DepositPayout:
+      type: object
+      required:
+        - interestPayoutFrequency
+        - principalPayout
+        - payoutAccount
+      properties:
+        interestPayoutFrequency:
+          type: string
+          enum:
+            - MONTHLY
+            - QUARTERLY
+            - AT_MATURITY
+        principalPayout:
+          type: string
+          enum:
+            - AT_MATURITY
+            - ON_DEMAND
+        payoutAccount:
+          $ref: "#/components/schemas/PayoutAccount"
+
+    PayoutAccount:
+      type: object
+      required:
+        - accountId
+        - maskedAccountNumber
+        - currency
+      properties:
+        accountId:
+          type: string
+        maskedAccountNumber:
+          type: string
+        currency:
+          type: string
+
+    DepositOwnership:
+      type: object
+      required:
+        - owners
+      properties:
+        owners:
+          type: array
+          items:
+            $ref: "#/components/schemas/Owner"
+
+    Owner:
+      type: object
+      required:
+        - customerId
+        - role
+      properties:
+        customerId:
+          type: string
+        role:
+          type: string
+          enum:
+            - PRIMARY
+            - JOINT
+            - AUTHORIZED
+
+    DepositBalances:
+      type: object
+      required:
+        - asOf
+        - principalOutstanding
+        - accruedInterest
+        - estimatedMaturityValue
+      properties:
+        asOf:
+          type: string
+          format: date-time
+        principalOutstanding:
+          type: number
+          format: double
+        accruedInterest:
+          type: number
+          format: double
+        estimatedMaturityValue:
+          type: number
+          format: double
+          nullable: true
+
+    DepositFeatures:
+      type: object
+      required:
+        - autoRenewal
+        - earlyWithdrawal
+      properties:
+        autoRenewal:
+          $ref: "#/components/schemas/AutoRenewal"
+        earlyWithdrawal:
+          $ref: "#/components/schemas/EarlyWithdrawal"
+
+    AutoRenewal:
+      type: object
+      required:
+        - enabled
+        - renewalInstruction
+        - renewalTenorDays
+      properties:
+        enabled:
+          type: boolean
+        renewalInstruction:
+          type: string
+          nullable: true
+          enum:
+            - RENEW_PRINCIPAL
+            - RENEW_PRINCIPAL_AND_INTEREST
+            - NONE
+        renewalTenorDays:
+          type: integer
+          nullable: true
+
+    EarlyWithdrawal:
+      type: object
+      required:
+        - allowed
+        - penaltyType
+        - penaltyDetails
+      properties:
+        allowed:
+          type: boolean
+        penaltyType:
+          type: string
+          enum:
+            - NONE
+            - INTEREST_REDUCTION
+            - FIXED_FEE
+        penaltyDetails:
+          type: string
+
+    DepositTransactionsSummary:
+      type: object
+      required:
+        - transactionCount
+        - totalCredits
+        - totalDebits
+        - lastActivityDate
+      properties:
+        transactionCount:
+          type: integer
+        totalCredits:
+          type: number
+          format: double
+        totalDebits:
+          type: number
+          format: double
+        lastActivityDate:
+          type: string
+          format: date
+
+    DepositTransaction:
+      type: object
+      required:
+        - transactionId
+        - type
+        - status
+        - amount
+        - currency
+        - bookingDate
+        - description
+      properties:
+        transactionId:
+          type: string
+        type:
+          type: string
+          enum:
+            - OPENING
+            - INSTRUCTION
+            - INTEREST_PAYOUT
+            - WITHDRAWAL
+            - CLOSURE
+        status:
+          type: string
+          enum:
+            - BOOKED
+            - PENDING
+            - REVERSED
+        amount:
+          type: number
+          format: double
+        currency:
+          type: string
+        bookingDate:
+          type: string
+          format: date
+        description:
+          type: string
+
+    CifLookup:
+      type: object
+      required:
+        - source
+        - resolvedAt
+        - eligibleAccountTypes
+        - excludedAccountTypes
+      properties:
+        source:
+          type: string
+        resolvedAt:
+          type: string
+          format: date-time
+        eligibleAccountTypes:
+          type: array
+          items:
+            type: string
+        excludedAccountTypes:
+          type: array
+          items:
+            type: string
+
+    ResponseMetadata:
+      type: object
+      required:
+        - schemaVersion
+        - currencyDecimals
+        - disclaimers
+      properties:
+        schemaVersion:
+          type: string
+        currencyDecimals:
+          type: object
+          additionalProperties:
+            type: integer
+        disclaimers:
+          type: array
+          items:
+            type: string
+
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        correlationId:
+          type: string
+          nullable: true
+        details:
+          type: object
+          additionalProperties: true

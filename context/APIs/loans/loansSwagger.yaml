@@ -1,0 +1,631 @@
+openapi: 3.0.3
+
+info:
+  title: Loans API
+  version: 1.0.0
+  description: >
+    Returns the customer's loans, balances, schedule info, features, and minimal payment transactions.
+
+servers:
+  - url: https://api.bank.example.com
+    description: Production
+  - url: https://sandbox.api.bank.example.com
+    description: Sandbox
+
+security:
+  - bearerAuth: []
+
+paths:
+  /v1/loans:
+    get:
+      operationId: getLoans
+      summary: List customer loans with balances and minimal transactions
+      tags:
+        - Loans
+
+      parameters:
+        - name: customerID
+          in: header
+          required: true
+          description: Customer ID
+          schema:
+            type: string
+        - name: asOfDate
+          in: query
+          required: true
+          description: As-of date for balances/enrichment (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+
+        - name: includeClosed
+          in: query
+          required: false
+          description: Whether to include CLOSED loans
+          schema:
+            type: boolean
+            default: false
+
+        - name: size
+          in: query
+          required: false
+          description: Page size
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+
+        - name: cursor
+          in: query
+          required: false
+          description: Cursor for pagination
+          schema:
+            type: string
+            nullable: true
+
+        - name: timezone
+          in: query
+          required: false
+          schema:
+            type: string
+            default: Asia/Jerusalem
+
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoansDocument"
+
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+        "401":
+          description: Unauthorized
+
+        "403":
+          description: Forbidden
+
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+        "504":
+          description: Upstream timeout
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    LoansDocument:
+      type: object
+      required:
+        - _id
+        - customer
+        - data
+      properties:
+        _id:
+          type: string
+          description: Customer ID (MongoDB document ID)
+        customer:
+          $ref: "#/components/schemas/CustomerInfo"
+        data:
+          $ref: "#/components/schemas/LoansData"
+
+    RequestContext:
+      type: object
+      required:
+        - requestId
+        - receivedAt
+        - authorization
+        - query
+      properties:
+        requestId:
+          type: string
+          format: uuid
+        receivedAt:
+          type: string
+          format: date-time
+        authorization:
+          $ref: "#/components/schemas/AuthContext"
+        query:
+          $ref: "#/components/schemas/QueryContext"
+
+    AuthContext:
+      type: object
+      required:
+        - scheme
+        - subjectType
+        - subjectId
+        - scopes
+      properties:
+        scheme:
+          type: string
+          example: Bearer
+        subjectType:
+          type: string
+          example: customer
+        subjectId:
+          type: string
+        scopes:
+          type: array
+          items:
+            type: string
+
+    QueryContext:
+      type: object
+      required:
+        - asOfDate
+        - timezone
+        - includeClosed
+        - page
+      properties:
+        asOfDate:
+          type: string
+          format: date
+        timezone:
+          type: string
+        includeClosed:
+          type: boolean
+        page:
+          $ref: "#/components/schemas/PageRequest"
+
+    PageRequest:
+      type: object
+      required:
+        - size
+        - cursor
+      properties:
+        size:
+          type: integer
+        cursor:
+          type: string
+          nullable: true
+
+    CustomerInfo:
+      type: object
+      required:
+        - customerId
+        - cifId
+        - customerType
+        - segment
+        - residencyCountry
+      properties:
+        customerId:
+          type: string
+        cifId:
+          type: string
+        customerType:
+          type: string
+          enum:
+            - RETAIL
+            - BUSINESS
+        segment:
+          type: string
+        residencyCountry:
+          type: string
+
+    LoansData:
+      type: object
+      required:
+        - loans
+        - cifLookup
+      properties:
+        loans:
+          type: array
+          items:
+            $ref: "#/components/schemas/LoanWithDetails"
+        cifLookup:
+          $ref: "#/components/schemas/CifLookup"
+
+    LoanWithDetails:
+      type: object
+      required:
+        - loan
+        - balances
+        - schedule
+        - features
+        - transactionsSummary
+        - transactions
+      properties:
+        loan:
+          $ref: "#/components/schemas/Loan"
+        balances:
+          $ref: "#/components/schemas/LoanBalances"
+        schedule:
+          $ref: "#/components/schemas/LoanSchedule"
+        features:
+          $ref: "#/components/schemas/LoanFeatures"
+        transactionsSummary:
+          $ref: "#/components/schemas/LoanTransactionsSummary"
+        transactions:
+          type: array
+          items:
+            $ref: "#/components/schemas/LoanTransaction"
+
+    Loan:
+      type: object
+      required:
+        - loanId
+        - productType
+        - nickname
+        - currency
+        - status
+        - openedDate
+        - maturityDate
+        - principalOriginal
+        - interestRate
+        - repayment
+        - ownership
+      properties:
+        loanId:
+          type: string
+        productType:
+          type: string
+          enum:
+            - PERSONAL_LOAN
+            - STUDENT_LOAN
+            - BUSINESS_LOAN
+            - MORTGAGE_LOAN
+            - OTHER
+        nickname:
+          type: string
+        currency:
+          type: string
+        status:
+          type: string
+          enum:
+            - ACTIVE
+            - CLOSED
+            - DELINQUENT
+            - RESTRUCTURED
+        openedDate:
+          type: string
+          format: date
+        maturityDate:
+          type: string
+          format: date
+        principalOriginal:
+          type: number
+          format: double
+        interestRate:
+          $ref: "#/components/schemas/LoanInterestRate"
+        repayment:
+          $ref: "#/components/schemas/LoanRepayment"
+        ownership:
+          $ref: "#/components/schemas/LoanOwnership"
+
+    LoanInterestRate:
+      type: object
+      required:
+        - rateType
+        - annualRate
+        - indexName
+        - spread
+        - resetFrequency
+        - dayCountConvention
+      properties:
+        rateType:
+          type: string
+          enum:
+            - FIXED
+            - VARIABLE
+        annualRate:
+          type: number
+          format: double
+        indexName:
+          type: string
+          nullable: true
+        spread:
+          type: number
+          format: double
+          nullable: true
+        resetFrequency:
+          type: string
+          nullable: true
+          enum:
+            - MONTHLY
+            - QUARTERLY
+            - ANNUALLY
+        dayCountConvention:
+          type: string
+          enum:
+            - ACT_365
+            - ACT_360
+            - THIRTY_360
+
+    LoanRepayment:
+      type: object
+      required:
+        - repaymentType
+        - paymentFrequency
+        - paymentDayOfMonth
+        - nextPaymentDate
+        - paymentAccount
+      properties:
+        repaymentType:
+          type: string
+          enum:
+            - AMORTIZING
+            - INTEREST_ONLY
+            - BULLET
+        paymentFrequency:
+          type: string
+          enum:
+            - MONTHLY
+            - BIWEEKLY
+            - WEEKLY
+        paymentDayOfMonth:
+          type: integer
+          minimum: 1
+          maximum: 31
+        nextPaymentDate:
+          type: string
+          format: date
+        paymentAccount:
+          $ref: "#/components/schemas/PaymentAccount"
+
+    PaymentAccount:
+      type: object
+      required:
+        - accountId
+        - maskedAccountNumber
+        - currency
+      properties:
+        accountId:
+          type: string
+        maskedAccountNumber:
+          type: string
+        currency:
+          type: string
+
+    LoanOwnership:
+      type: object
+      required:
+        - borrowers
+      properties:
+        borrowers:
+          type: array
+          items:
+            $ref: "#/components/schemas/Borrower"
+
+    Borrower:
+      type: object
+      required:
+        - customerId
+        - role
+      properties:
+        customerId:
+          type: string
+        role:
+          type: string
+          enum:
+            - PRIMARY
+            - CO_BORROWER
+            - GUARANTOR
+
+    LoanBalances:
+      type: object
+      required:
+        - asOf
+        - principalOutstanding
+        - accruedInterest
+        - totalOutstanding
+        - nextInstallmentAmount
+        - nextInstallmentBreakdown
+      properties:
+        asOf:
+          type: string
+          format: date-time
+        principalOutstanding:
+          type: number
+          format: double
+        accruedInterest:
+          type: number
+          format: double
+        totalOutstanding:
+          type: number
+          format: double
+        nextInstallmentAmount:
+          type: number
+          format: double
+        nextInstallmentBreakdown:
+          $ref: "#/components/schemas/InstallmentBreakdown"
+
+    InstallmentBreakdown:
+      type: object
+      required:
+        - principal
+        - interest
+        - fees
+      properties:
+        principal:
+          type: number
+          format: double
+        interest:
+          type: number
+          format: double
+        fees:
+          type: number
+          format: double
+
+    LoanSchedule:
+      type: object
+      required:
+        - remainingInstallments
+        - finalInstallmentDate
+      properties:
+        remainingInstallments:
+          type: integer
+        finalInstallmentDate:
+          type: string
+          format: date
+
+    LoanFeatures:
+      type: object
+      required:
+        - earlyRepayment
+      properties:
+        earlyRepayment:
+          $ref: "#/components/schemas/EarlyRepayment"
+
+    EarlyRepayment:
+      type: object
+      required:
+        - allowed
+        - feeType
+        - feeRate
+        - notes
+      properties:
+        allowed:
+          type: boolean
+        feeType:
+          type: string
+          enum:
+            - NONE
+            - PERCENT_OF_OUTSTANDING
+            - FIXED_FEE
+        feeRate:
+          type: number
+          format: double
+        notes:
+          type: string
+
+    LoanTransactionsSummary:
+      type: object
+      required:
+        - transactionCount
+        - totalDebits
+        - totalCredits
+        - lastActivityDate
+      properties:
+        transactionCount:
+          type: integer
+        totalDebits:
+          type: number
+          format: double
+        totalCredits:
+          type: number
+          format: double
+        lastActivityDate:
+          type: string
+          format: date
+
+    LoanTransaction:
+      type: object
+      required:
+        - transactionId
+        - type
+        - status
+        - amount
+        - currency
+        - bookingDate
+        - description
+      properties:
+        transactionId:
+          type: string
+        type:
+          type: string
+          enum:
+            - INSTALLMENT_PAYMENT
+            - EARLY_REPAYMENT
+            - FEE
+            - DISBURSEMENT
+            - ADJUSTMENT
+        status:
+          type: string
+          enum:
+            - BOOKED
+            - PENDING
+            - REVERSED
+        amount:
+          type: number
+          format: double
+        currency:
+          type: string
+        bookingDate:
+          type: string
+          format: date
+        description:
+          type: string
+
+    CifLookup:
+      type: object
+      required:
+        - source
+        - resolvedAt
+        - eligibleAccountTypes
+        - excludedAccountTypes
+      properties:
+        source:
+          type: string
+        resolvedAt:
+          type: string
+          format: date-time
+        eligibleAccountTypes:
+          type: array
+          items:
+            type: string
+        excludedAccountTypes:
+          type: array
+          items:
+            type: string
+
+    ResponseMetadata:
+      type: object
+      required:
+        - schemaVersion
+        - currencyDecimals
+        - disclaimers
+      properties:
+        schemaVersion:
+          type: string
+        currencyDecimals:
+          type: object
+          additionalProperties:
+            type: integer
+        disclaimers:
+          type: array
+          items:
+            type: string
+
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        correlationId:
+          type: string
+          nullable: true
+        details:
+          type: object
+          additionalProperties: true
