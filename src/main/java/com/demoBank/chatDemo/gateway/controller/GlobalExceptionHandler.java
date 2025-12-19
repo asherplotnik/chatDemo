@@ -51,7 +51,7 @@ public class GlobalExceptionHandler {
         // Return default answer in the detected language
         String defaultAnswer;
         if (ex.isHebrew()) {
-            defaultAnswer = "מצטער אני לא יכול למלא את בקשה זו.";
+            defaultAnswer = ".מצטער אני לא יכול למלא את בקשה זו";
         } else {
             defaultAnswer = "Sorry. I can't comply with this request.";
         }
