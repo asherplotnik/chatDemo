@@ -60,6 +60,36 @@ public class GroqApiResponse {
         
         @JsonProperty("content")
         private String content;
+        
+        @JsonProperty("tool_calls")
+        private List<ToolCall> toolCalls;
+    }
+    
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class ToolCall {
+        @JsonProperty("id")
+        private String id;
+        
+        @JsonProperty("type")
+        private String type; // "function"
+        
+        @JsonProperty("function")
+        private FunctionCall function;
+    }
+    
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class FunctionCall {
+        @JsonProperty("name")
+        private String name;
+        
+        @JsonProperty("arguments")
+        private String arguments; // JSON string
     }
     
     @Data
@@ -78,11 +108,11 @@ public class GroqApiResponse {
     }
     
     /**
-     * Extracts the translated text from the response.
+     * Extracts the content from the response (generic method for any type of response).
      * 
-     * @return Translated text or null if not available
+     * @return Response content or null if not available
      */
-    public String getTranslatedText() {
+    public String getContent() {
         if (choices != null && !choices.isEmpty()) {
             Choice firstChoice = choices.get(0);
             if (firstChoice != null && firstChoice.getMessage() != null) {
@@ -90,5 +120,39 @@ public class GroqApiResponse {
             }
         }
         return null;
+    }
+    
+    /**
+     * Extracts tool calls from the response.
+     * 
+     * @return List of tool calls or empty list if not available
+     */
+    public List<ToolCall> getToolCalls() {
+        if (choices != null && !choices.isEmpty()) {
+            Choice firstChoice = choices.get(0);
+            if (firstChoice != null && firstChoice.getMessage() != null) {
+                return firstChoice.getMessage().getToolCalls();
+            }
+        }
+        return List.of();
+    }
+    
+    /**
+     * Checks if the response contains tool calls.
+     * 
+     * @return true if tool calls are present
+     */
+    public boolean hasToolCalls() {
+        List<ToolCall> toolCalls = getToolCalls();
+        return toolCalls != null && !toolCalls.isEmpty();
+    }
+    
+    /**
+     * Extracts the translated text from the response.
+     * 
+     * @return Translated text or null if not available
+     */
+    public String getTranslatedText() {
+        return getContent();
     }
 }

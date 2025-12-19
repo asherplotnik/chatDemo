@@ -31,6 +31,9 @@ public class InboundTranslator {
     @Value("${translation.use-groq-api:false}")
     private boolean useGroqApi;
     
+    @Value("${groq.api.translation.model:llama-3.3-70b-versatile}")
+    private String translationModel;
+    
     /**
      * Gets the system prompt for semantic translation.
      * This prompt will be used when integrating with an LLM.
@@ -92,7 +95,7 @@ public class InboundTranslator {
         try {
             String systemPrompt = getCondensedPrompt();
             
-            GroqApiResponse response = groqApiClient.translate(systemPrompt, hebrewText);
+            GroqApiResponse response = groqApiClient.callGroqApi(systemPrompt, hebrewText, translationModel);
             
             String translatedText = response.getTranslatedText();
             

@@ -1,5 +1,7 @@
 package com.demoBank.chatDemo.gateway.controller;
 
+import com.demoBank.chatDemo.gateway.dto.ChatResponse;
+import com.demoBank.chatDemo.guard.exception.MaliciousContentException;
 import com.demoBank.chatDemo.gateway.exception.MissingCustomerIdException;
 import com.demoBank.chatDemo.gateway.exception.RateLimitExceededException;
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +42,29 @@ public class GlobalExceptionHandler {
         log.warn("Rate limit exceeded: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
                 .body(new ErrorResponse("RATE_LIMIT_EXCEEDED", ex.getMessage()));
+    }
+    
+    @ExceptionHandler(MaliciousContentException.class)
+    public ResponseEntity<ChatResponse> handleMaliciousContent(MaliciousContentException ex) {
+        log.warn("Malicious content detected: {}", ex.getMessage());
+        
+        // Return default answer in the detected language
+        String defaultAnswer;
+        if (ex.isHebrew()) {
+            defaultAnswer = "מצטער אני לא יכול למלא את בקשה זו.";
+        } else {
+            defaultAnswer = "Sorry. I can't comply with this request.";
+        }
+        
+        // Create ChatResponse with default answer
+        ChatResponse response = ChatResponse.builder()
+                .answer(defaultAnswer)
+                .correlationId(null) // Correlation ID not available in exception handler context
+                .explanation("Security check detected potentially malicious content.")
+                .build();
+        
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(response);
     }
     
     @ExceptionHandler(Exception.class)

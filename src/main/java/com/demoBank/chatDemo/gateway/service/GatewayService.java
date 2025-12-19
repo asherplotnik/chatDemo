@@ -7,6 +7,9 @@ import com.demoBank.chatDemo.gateway.exception.RateLimitExceededException;
 import com.demoBank.chatDemo.gateway.model.ChatSessionContext;
 import com.demoBank.chatDemo.gateway.model.RequestContext;
 import com.demoBank.chatDemo.gateway.util.CustomerIdMasker;
+import com.demoBank.chatDemo.guard.exception.MaliciousContentException;
+import com.demoBank.chatDemo.guard.model.GuardResult;
+import com.demoBank.chatDemo.guard.service.GuardService;
 import com.demoBank.chatDemo.language.model.LanguageDetectionResult;
 import com.demoBank.chatDemo.language.service.LanguageDetector;
 import com.demoBank.chatDemo.translation.model.TranslationResult;
@@ -27,6 +30,7 @@ import java.time.Instant;
  * - Enforce rate limiting
  * - Detect language on every message (handles language switching)
  * - Store detected language in session (first time only, for audit)
+ * - Validate message security (prompt injection and malicious intent checks)
  * - Translate Hebrew to English if needed
  * - Forward to downstream components
  */
@@ -39,6 +43,7 @@ public class GatewayService {
     private final RateLimiter rateLimiter;
     private final SessionService sessionService;
     private final LanguageDetector languageDetector;
+    private final GuardService guardService;
     private final InboundTranslator inboundTranslator;
     
     /**
@@ -60,6 +65,8 @@ public class GatewayService {
         ChatSessionContext session = sessionService.getOrCreateSession(customerId);
         
         LanguageDetectionResult languageResult = establishLanguage(session, request.getMessageText(), correlationId);
+        
+        validateMessageSecurity(request.getMessageText(), correlationId, languageResult.isHebrew());
         
         String messageTextForProcessing = translateToEnglishIfHebrewDetected(request.getMessageText(), languageResult, session, correlationId);
 
@@ -127,6 +134,32 @@ public class GatewayService {
                     CustomerIdMasker.mask(customerId), correlationId);
             throw new RateLimitExceededException("Rate limit exceeded. Please try again later.");
         }
+    }
+    
+    /**
+     * Validates message security for prompt injections and malicious intent.
+     * This check happens BEFORE translation to prevent malicious content from being processed.
+     * 
+     * @param messageText Message text to validate
+     * @param correlationId Correlation ID for logging
+     * @param isHebrew Whether the message is in Hebrew (for language-specific error messages)
+     * @throws MaliciousContentException if malicious content is detected
+     */
+    private void validateMessageSecurity(String messageText, String correlationId, boolean isHebrew) {
+        GuardResult guardResult = guardService.validateMessage(messageText, correlationId);
+        
+        if (!guardResult.isSafe()) {
+            log.warn("Malicious content detected - correlationId: {}, riskScore: {}, reason: {}", 
+                    correlationId, guardResult.getRiskScore(), guardResult.getRejectionReason());
+            throw new MaliciousContentException(
+                    guardResult.getRejectionReason() != null 
+                            ? guardResult.getRejectionReason() 
+                            : "Message contains potentially malicious content and cannot be processed.",
+                    isHebrew);
+        }
+        
+        log.debug("Message passed security guard - correlationId: {}, riskScore: {}", 
+                correlationId, guardResult.getRiskScore());
     }
     
     /**
