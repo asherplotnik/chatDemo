@@ -3,10 +3,13 @@ package com.demoBank.chatDemo.orchestrator.model;
 import com.demoBank.chatDemo.gateway.dto.ChatResponse;
 import com.demoBank.chatDemo.gateway.model.ChatSessionContext;
 import com.demoBank.chatDemo.gateway.model.RequestContext;
+import com.demoBank.chatDemo.orchestrator.dto.IntentExtractionResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.util.List;
 
 /**
  * Orchestration state - maintains state throughout the orchestration workflow.
@@ -30,10 +33,10 @@ public class OrchestrationState {
     private ChatSessionContext sessionContext;
     
     /**
-     * Extracted intent (domain + metric + parameters).
-     * TODO: Create Intent model
+     * Extracted intents (list of domain + metric + parameters).
+     * Can contain multiple intents for queries requiring multiple domains.
      */
-    private Object extractedIntent;
+    private List<IntentExtractionResponse.IntentData> extractedIntent;
     
     /**
      * Resolved time range (absolute dates).

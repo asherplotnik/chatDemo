@@ -162,11 +162,22 @@ public class OrchestratorService {
         
         // Load previous intent for follow-up questions
         if (sessionContext.getLastResolvedIntent() != null) {
-            state.setExtractedIntent(sessionContext.getLastResolvedIntent());
-            log.debug("Loaded previous intent - correlationId: {}, domain: {}, metric: {}",
+            ChatSessionContext.ResolvedIntent resolvedIntent = sessionContext.getLastResolvedIntent();
+            log.debug("Previous intent found in session - correlationId: {}, domain: {}, metric: {}",
                     correlationId,
-                    sessionContext.getLastResolvedIntent().getDomain(),
-                    sessionContext.getLastResolvedIntent().getMetric());
+                    resolvedIntent.getDomain(),
+                    resolvedIntent.getMetric());
+            
+            // Convert ResolvedIntent to IntentExtractionResponse.IntentData
+            IntentExtractionResponse.IntentData intentData = IntentExtractionResponse.IntentData.builder()
+                    .domain(resolvedIntent.getDomain())
+                    .metric(resolvedIntent.getMetric())
+                    .timeRangeHint(null) // Not stored in ResolvedIntent
+                    .entityHints(null) // Not stored in ResolvedIntent
+                    .parameters(null) // Parameters stored as string, would need parsing
+                    .build();
+            
+            state.setExtractedIntent(List.of(intentData));
         }
         
         // Load previous time range for follow-up questions
