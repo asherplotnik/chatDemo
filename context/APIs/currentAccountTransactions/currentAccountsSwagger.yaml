@@ -82,6 +82,25 @@ paths:
             type: string
             default: Asia/Jerusalem
           example: "Asia/Jerusalem"
+        - name: accountList
+          in: query
+          required: false
+          description: Filter by account IDs (list of account IDs to include)
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: true
+          example: ["ACC-001992310", "ACC-004771120"]
+        - name: includeTransactions
+          in: query
+          required: false
+          description: Whether to include transactions (balances are always included)
+          schema:
+            type: boolean
+            default: true
+          example: true
       responses:
         "200":
           description: Accounts and transactions successfully returned

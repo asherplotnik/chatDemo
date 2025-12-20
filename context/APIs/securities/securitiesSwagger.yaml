@@ -70,6 +70,15 @@ paths:
             type: string
             default: Asia/Jerusalem
 
+        - name: includePositions
+          in: query
+          required: false
+          description: Whether to include positions (valuations are always included)
+          schema:
+            type: boolean
+            default: true
+          example: true
+
       responses:
         "200":
           description: Successful response

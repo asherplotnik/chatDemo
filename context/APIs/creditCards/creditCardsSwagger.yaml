@@ -80,6 +80,24 @@ paths:
             type: string
             default: Asia/Jerusalem
 
+        - name: last4Digits
+          in: query
+          required: false
+          description: Filter by last 4 digits of the card (e.g., "5512")
+          schema:
+            type: string
+            pattern: "^[0-9]{4}$"
+          example: "5512"
+
+        - name: includeTransactions
+          in: query
+          required: false
+          description: Whether to include transactions (balances are always included)
+          schema:
+            type: boolean
+            default: true
+          example: true
+
       responses:
         "200":
           description: Successful response

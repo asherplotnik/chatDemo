@@ -71,6 +71,23 @@ paths:
             type: string
             default: Asia/Jerusalem
 
+        - name: nicknameFilter
+          in: query
+          required: false
+          description: Filter deposits by nickname (case-insensitive, matches if string is contained in nickname or equals nickname)
+          schema:
+            type: string
+          example: "Kids Fund"
+
+        - name: includeTransactions
+          in: query
+          required: false
+          description: Whether to include transactions (balances are always included)
+          schema:
+            type: boolean
+            default: true
+          example: true
+
       responses:
         "200":
           description: Successful response
