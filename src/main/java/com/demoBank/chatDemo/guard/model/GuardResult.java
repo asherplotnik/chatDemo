@@ -26,6 +26,12 @@ public class GuardResult {
     private boolean maliciousIntentDetected;
     
     /**
+     * Whether unpermitted actions (beyond data fetching) were detected.
+     * Examples: creating accounts, modifying permissions, producing checkbooks, etc.
+     */
+    private boolean unpermittedActionDetected;
+    
+    /**
      * Risk score (0.0 = safe, 1.0 = highly dangerous).
      */
     private double riskScore;

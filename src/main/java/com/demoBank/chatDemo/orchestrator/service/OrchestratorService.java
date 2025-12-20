@@ -21,7 +21,7 @@ import java.time.Instant;
  * - Maintain conversation context
  * 
  * Workflow steps:
- * LOAD_CONTEXT -> GUARD_GATE -> (IF AWAITING_CLARIFICATION ? APPLY_CLARIFICATION : INTENT_EXTRACT)
+ * LOAD_CONTEXT -> (IF AWAITING_CLARIFICATION ? APPLY_CLARIFICATION : INTENT_EXTRACT)
  * -> RESOLVE_TIME_RANGE -> PLAN -> (IF NEEDS_CLARIFIER -> ASK_CLARIFIER -> SAVE_CONTEXT -> END)
  * -> FETCH -> NORMALIZE -> COMPUTE -> DRAFT -> SAVE_CONTEXT -> RESPOND
  */
@@ -49,48 +49,42 @@ public class OrchestratorService {
             // Step 1: LOAD_CONTEXT - Load conversation context first to understand the request
             state = loadContext(state, requestContext);
             
-            // Step 2: GUARD_GATE - Security and policy guard check (combines RECEIVE validation)
-            state = guardGate(state, requestContext);
-            if (state.shouldStop()) {
-                return state.getResponse();
-            }
-            
-            // Step 3: IF AWAITING_CLARIFICATION ? APPLY_CLARIFICATION : INTENT_EXTRACT
+            // Step 2: IF AWAITING_CLARIFICATION ? APPLY_CLARIFICATION : INTENT_EXTRACT
             if (state.isAwaitingClarification()) {
                 state = applyClarification(state, requestContext);
             } else {
                 state = intentExtract(state, requestContext);
             }
             
-            // Step 4: RESOLVE_TIME_RANGE
+            // Step 3: RESOLVE_TIME_RANGE
             state = resolveTimeRange(state, requestContext);
             
-            // Step 5: PLAN
+            // Step 4: PLAN
             state = plan(state, requestContext);
             
-            // Step 6: IF NEEDS_CLARIFIER -> ASK_CLARIFIER -> SAVE_CONTEXT -> END
+            // Step 5: IF NEEDS_CLARIFIER -> ASK_CLARIFIER -> SAVE_CONTEXT -> END
             if (state.needsClarifier()) {
                 state = askClarifier(state, requestContext);
                 saveContext(state, requestContext);
                 return state.getResponse();
             }
             
-            // Step 7: FETCH
+            // Step 6: FETCH
             state = fetch(state, requestContext);
             
-            // Step 8: NORMALIZE
+            // Step 7: NORMALIZE
             state = normalize(state, requestContext);
             
-            // Step 9: COMPUTE
+            // Step 8: COMPUTE
             state = compute(state, requestContext);
             
-            // Step 10: DRAFT
+            // Step 9: DRAFT
             state = draft(state, requestContext);
             
-            // Step 11: SAVE_CONTEXT
+            // Step 10: SAVE_CONTEXT
             saveContext(state, requestContext);
             
-            // Step 12: RESPOND
+            // Step 11: RESPOND
             return respond(state, requestContext);
             
         } catch (Exception e) {
@@ -212,49 +206,7 @@ public class OrchestratorService {
     }
     
     /**
-     * Step 2: GUARD_GATE - Security and policy guard check (combines RECEIVE validation).
-     * Already performed in GatewayService, but verify here with context awareness.
-     * 
-     * @param state Current orchestration state
-     * @param requestContext Request context
-     * @return Updated orchestration state
-     */
-    private OrchestrationState guardGate(OrchestrationState state, RequestContext requestContext) {
-        String correlationId = requestContext.getCorrelationId();
-        String customerId = requestContext.getCustomerId();
-        
-        log.debug("Step GUARD_GATE - correlationId: {}, customerId: {}", correlationId, maskCustomerId(customerId));
-        
-        // Validate customerId is present (should never be null, but double-check)
-        if (customerId == null || customerId.isBlank()) {
-            log.error("CustomerId is missing from RequestContext - cannot proceed with orchestration");
-            state.setShouldStop(true);
-            state.setErrorMessage("CustomerId is missing from RequestContext");
-            state.setResponse(createErrorResponse(correlationId, new IllegalStateException("CustomerId is missing")));
-            return state;
-        }
-        
-        // Validate request structure
-        if (requestContext.getTranslatedMessageText() == null || requestContext.getTranslatedMessageText().isBlank()) {
-            log.error("Message text is missing from RequestContext - cannot proceed with orchestration");
-            state.setShouldStop(true);
-            state.setErrorMessage("Message text is missing");
-            state.setResponse(createErrorResponse(correlationId, new IllegalStateException("Message text is missing")));
-            return state;
-        }
-        
-        // TODO: Implement additional guard gate logic with context awareness
-        // - Verify security guard passed (already done in GatewayService)
-        // - Use loaded context to better understand the request
-        // - Check for action intents (transfers, payments, etc.) using context
-        // - Block if suspicious/action detected
-        // - Set stop flag if blocked
-        
-        return state;
-    }
-    
-    /**
-     * Step 4a: APPLY_CLARIFICATION - Apply answer to previously asked clarifying question.
+     * Step 2a: APPLY_CLARIFICATION - Apply answer to previously asked clarifying question.
      * 
      * @param state Current orchestration state
      * @param requestContext Request context
@@ -271,7 +223,7 @@ public class OrchestratorService {
     }
     
     /**
-     * Step 4b: INTENT_EXTRACT - Extract structured intent from user message.
+     * Step 2b: INTENT_EXTRACT - Extract structured intent from user message.
      * 
      * @param state Current orchestration state
      * @param requestContext Request context
@@ -287,7 +239,7 @@ public class OrchestratorService {
     }
     
     /**
-     * Step 5: RESOLVE_TIME_RANGE - Resolve absolute dates from relative time expressions.
+     * Step 3: RESOLVE_TIME_RANGE - Resolve absolute dates from relative time expressions.
      * 
      * @param state Current orchestration state
      * @param requestContext Request context
@@ -304,7 +256,7 @@ public class OrchestratorService {
     }
     
     /**
-     * Step 6: PLAN - Choose which read-only APIs to call.
+     * Step 4: PLAN - Choose which read-only APIs to call.
      * 
      * @param state Current orchestration state
      * @param requestContext Request context
@@ -327,7 +279,7 @@ public class OrchestratorService {
     }
     
     /**
-     * Step 7: ASK_CLARIFIER - Ask a clarifying question if intent is ambiguous.
+     * Step 5: ASK_CLARIFIER - Ask a clarifying question if intent is ambiguous.
      * 
      * @param state Current orchestration state
      * @param requestContext Request context
@@ -344,7 +296,7 @@ public class OrchestratorService {
     }
     
     /**
-     * Step 8: FETCH - Call read-only APIs to fetch data.
+     * Step 6: FETCH - Call read-only APIs to fetch data.
      * 
      * @param state Current orchestration state
      * @param requestContext Request context
@@ -368,7 +320,7 @@ public class OrchestratorService {
     }
     
     /**
-     * Step 9: NORMALIZE - Convert API responses to canonical internal models.
+     * Step 7: NORMALIZE - Convert API responses to canonical internal models.
      * 
      * @param state Current orchestration state
      * @param requestContext Request context
@@ -384,7 +336,7 @@ public class OrchestratorService {
     }
     
     /**
-     * Step 10: COMPUTE - Perform deterministic calculations.
+     * Step 8: COMPUTE - Perform deterministic calculations.
      * 
      * @param state Current orchestration state
      * @param requestContext Request context
@@ -400,7 +352,7 @@ public class OrchestratorService {
     }
     
     /**
-     * Step 11: DRAFT - Generate answer text and explanation.
+     * Step 9: DRAFT - Generate answer text and explanation.
      * 
      * @param state Current orchestration state
      * @param requestContext Request context
@@ -417,7 +369,7 @@ public class OrchestratorService {
     }
     
     /**
-     * Step 12: SAVE_CONTEXT - Save conversation context to session.
+     * Step 10: SAVE_CONTEXT - Save conversation context to session.
      * 
      * @param state Current orchestration state
      * @param requestContext Request context
@@ -433,7 +385,7 @@ public class OrchestratorService {
     }
     
     /**
-     * Step 13: RESPOND - Return final response to user.
+     * Step 11: RESPOND - Return final response to user.
      * 
      * @param state Current orchestration state
      * @param requestContext Request context

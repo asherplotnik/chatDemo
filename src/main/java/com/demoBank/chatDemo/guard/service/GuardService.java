@@ -126,6 +126,7 @@ public class GuardService {
                     .isSafe(guardResponse.getIsSafe() != null ? guardResponse.getIsSafe() : true)
                     .promptInjectionDetected(guardResponse.getPromptInjectionDetected() != null ? guardResponse.getPromptInjectionDetected() : false)
                     .maliciousIntentDetected(guardResponse.getMaliciousIntentDetected() != null ? guardResponse.getMaliciousIntentDetected() : false)
+                    .unpermittedActionDetected(guardResponse.getUnpermittedActionDetected() != null ? guardResponse.getUnpermittedActionDetected() : false)
                     .riskScore(guardResponse.getRiskScore() != null ? guardResponse.getRiskScore() : 0.0)
                     .confidence(guardResponse.getConfidence() != null ? guardResponse.getConfidence() : 0.0)
                     .rejectionReason(guardResponse.getRejectionReason())
@@ -215,6 +216,7 @@ public class GuardService {
                 .isSafe(true)
                 .promptInjectionDetected(false)
                 .maliciousIntentDetected(false)
+                .unpermittedActionDetected(false)
                 .riskScore(0.0)
                 .confidence(1.0)
                 .build();

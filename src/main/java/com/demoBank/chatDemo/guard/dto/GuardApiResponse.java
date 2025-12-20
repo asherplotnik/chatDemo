@@ -25,6 +25,9 @@ public class GuardApiResponse {
     @JsonProperty("maliciousIntentDetected")
     private Boolean maliciousIntentDetected;
     
+    @JsonProperty("unpermittedActionDetected")
+    private Boolean unpermittedActionDetected;
+    
     @JsonProperty("riskScore")
     private Double riskScore;
     

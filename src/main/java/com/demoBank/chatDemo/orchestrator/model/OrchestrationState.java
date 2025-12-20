@@ -99,6 +99,19 @@ public class OrchestrationState {
     private boolean needsClarifier = false;
     
     /**
+     * What needs clarification (e.g., "time_range", "account_selection", "intent_domain", "metric").
+     * Set by INTENT_EXTRACT, RESOLVE_TIME_RANGE, or PLAN when ambiguity is detected.
+     * Used by ASK_CLARIFIER to generate the appropriate question.
+     */
+    private String clarificationNeeded;
+    
+    /**
+     * Additional context about what needs clarification (optional).
+     * Can contain details like possible options, detected ambiguity, etc.
+     */
+    private String clarificationContext;
+    
+    /**
      * Error message if orchestration failed.
      */
     private String errorMessage;

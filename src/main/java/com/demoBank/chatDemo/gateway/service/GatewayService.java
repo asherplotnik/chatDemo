@@ -156,8 +156,9 @@ public class GatewayService {
         GuardResult guardResult = guardService.validateMessage(messageText, correlationId);
         
         if (!guardResult.isSafe()) {
-            log.warn("Malicious content detected - correlationId: {}, riskScore: {}, reason: {}", 
-                    correlationId, guardResult.getRiskScore(), guardResult.getRejectionReason());
+            String detectedIssues = buildDetectedIssuesString(guardResult);
+            log.warn("Security check failed - correlationId: {}, riskScore: {}, detectedIssues: {}, reason: {}", 
+                    correlationId, guardResult.getRiskScore(), detectedIssues, guardResult.getRejectionReason());
             throw new MaliciousContentException(
                     guardResult.getRejectionReason() != null 
                             ? guardResult.getRejectionReason() 
@@ -167,6 +168,28 @@ public class GatewayService {
         
         log.debug("Message passed security guard - correlationId: {}, riskScore: {}", 
                 correlationId, guardResult.getRiskScore());
+    }
+    
+    /**
+     * Builds a string describing detected security issues for logging.
+     * 
+     * @param guardResult Guard result containing detection flags
+     * @return Comma-separated string of detected issues
+     */
+    private String buildDetectedIssuesString(GuardResult guardResult) {
+        StringBuilder issues = new StringBuilder();
+        if (guardResult.isPromptInjectionDetected()) {
+            issues.append("promptInjection");
+        }
+        if (guardResult.isMaliciousIntentDetected()) {
+            if (issues.length() > 0) issues.append(", ");
+            issues.append("maliciousIntent");
+        }
+        if (guardResult.isUnpermittedActionDetected()) {
+            if (issues.length() > 0) issues.append(", ");
+            issues.append("unpermittedAction");
+        }
+        return issues.length() > 0 ? issues.toString() : "unknown";
     }
     
     /**
