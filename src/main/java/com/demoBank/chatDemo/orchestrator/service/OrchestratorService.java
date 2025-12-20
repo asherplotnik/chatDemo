@@ -82,6 +82,11 @@ public class OrchestratorService {
             if (state.needsClarifier()) {
                 state = askClarifier(state, requestContext);
                 saveContext(state, requestContext);
+                // Ensure response is created before returning
+                if (state.getResponse() == null) {
+                    log.warn("askClarifier did not create response - correlationId: {}, creating fallback response", correlationId);
+                    state.setResponse(createClarificationFallbackResponse(requestContext.getCorrelationId(), state.getClarificationNeeded()));
+                }
                 return state.getResponse();
             }
             
@@ -472,13 +477,94 @@ public class OrchestratorService {
      * @return Updated orchestration state with clarification question
      */
     private OrchestrationState askClarifier(OrchestrationState state, RequestContext requestContext) {
-        log.debug("Step ASK_CLARIFIER - correlationId: {}", requestContext.getCorrelationId());
-        // TODO: Implement clarifier logic
-        // - Determine what needs clarification
-        // - Generate one narrow clarifying question
-        // - Set clarification state in session
-        // - Create response with question
+        String correlationId = requestContext.getCorrelationId();
+        log.debug("Step ASK_CLARIFIER - correlationId: {}", correlationId);
+        
+        String clarificationNeeded = state.getClarificationNeeded();
+        String question = generateClarificationQuestion(clarificationNeeded, state);
+        
+        // Set clarification state in session
+        if (state.getSessionContext() != null) {
+            ChatSessionContext.ClarificationState clarificationState = ChatSessionContext.ClarificationState.builder()
+                    .question(question)
+                    .expectedAnswerType(getExpectedAnswerType(clarificationNeeded))
+                    .clarificationContext(clarificationNeeded)
+                    .askedAt(Instant.now())
+                    .build();
+            state.getSessionContext().setClarificationState(clarificationState);
+        }
+        
+        // Create response with clarification question
+        ChatResponse response = ChatResponse.builder()
+                .answer(question)
+                .correlationId(correlationId)
+                .explanation("Clarification needed: " + clarificationNeeded)
+                .build();
+        
+        state.setResponse(response);
+        log.info("Clarification question asked - correlationId: {}, question: {}", correlationId, question);
+        
         return state;
+    }
+    
+    /**
+     * Generates a clarification question based on what needs clarification.
+     * 
+     * @param clarificationNeeded What needs clarification (e.g., "domain", "metric", "time_range", "account_selection")
+     * @param state Orchestration state
+     * @return Clarification question string
+     */
+    private String generateClarificationQuestion(String clarificationNeeded, OrchestrationState state) {
+        if (clarificationNeeded == null) {
+            return "Could you please provide more details about your request?";
+        }
+        
+        return switch (clarificationNeeded.toLowerCase()) {
+            case "domain" -> "Which type of information are you looking for? (e.g., accounts, credit cards, loans, mortgages, deposits, securities)";
+            case "metric" -> "What would you like to know? (e.g., balance, list of transactions, total amount, count)";
+            case "time_range" -> "Which time period would you like? (e.g., last week, last month, yesterday, or specific dates)";
+            case "account_selection" -> "Which account would you like to check? (e.g., main account, or specify account number)";
+            default -> "Could you please provide more details about: " + clarificationNeeded + "?";
+        };
+    }
+    
+    /**
+     * Gets the expected answer type for a clarification context.
+     * 
+     * @param clarificationNeeded What needs clarification
+     * @return Expected answer type
+     */
+    private String getExpectedAnswerType(String clarificationNeeded) {
+        if (clarificationNeeded == null) {
+            return "text";
+        }
+        
+        return switch (clarificationNeeded.toLowerCase()) {
+            case "time_range" -> "time_range";
+            case "account_selection" -> "account";
+            case "domain" -> "domain";
+            case "metric" -> "metric";
+            default -> "text";
+        };
+    }
+    
+    /**
+     * Creates a fallback clarification response if askClarifier fails to create one.
+     * 
+     * @param correlationId Correlation ID
+     * @param clarificationNeeded What needs clarification
+     * @return Fallback ChatResponse
+     */
+    private ChatResponse createClarificationFallbackResponse(String correlationId, String clarificationNeeded) {
+        String question = clarificationNeeded != null 
+                ? "Could you please provide more details about: " + clarificationNeeded + "?"
+                : "Could you please provide more details about your request?";
+        
+        return ChatResponse.builder()
+                .answer(question)
+                .correlationId(correlationId)
+                .explanation("Clarification needed: " + (clarificationNeeded != null ? clarificationNeeded : "unknown"))
+                .build();
     }
     
     /**

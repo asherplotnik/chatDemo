@@ -26,8 +26,8 @@ public class IntentFunctionDefinition {
                         "properties", Map.of(
                             "domain", Map.of(
                                 "type", "string",
-                                "description", "Domain: accounts, transactions, creditCards, loans, mortgage, deposits, securities",
-                                "enum", List.of("accounts", "transactions", "creditCards", "loans", "mortgage", "deposits", "securities")
+                                "description", "Domain: current accounts, foreign current accounts, credit cards, loans, mortgages, deposits, securities",
+                                "enum", List.of("current-accounts", "foreign-current-accounts", "credit-cards", "loans", "mortgages", "deposits", "securities")
                             ),
                             "metric", Map.of(
                                 "type", "string",

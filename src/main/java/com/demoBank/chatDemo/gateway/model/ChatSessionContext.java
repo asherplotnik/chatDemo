@@ -130,7 +130,7 @@ public class ChatSessionContext {
     @Builder
     public static class ResolvedIntent {
         /**
-         * Domain: accounts, transactions, creditCards, loans, mortgage, deposits, securities
+         * Domain: current-accounts, foreign-current-accounts, credit-cards, loans, mortgages, deposits, securities
          */
         private String domain;
         
