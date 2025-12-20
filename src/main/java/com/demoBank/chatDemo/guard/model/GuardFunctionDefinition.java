@@ -47,7 +47,7 @@ public class GuardFunctionDefinition {
                     "maximum", 1.0
                 ),
                 "rejectionReason", Map.of(
-                    "type", "string",
+                    "type", List.of("string", "null"),
                     "description", "Reason for rejection if not safe, null if safe"
                 )
             ),
