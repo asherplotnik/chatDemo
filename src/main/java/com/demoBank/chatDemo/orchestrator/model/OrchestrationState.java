@@ -112,6 +112,18 @@ public class OrchestrationState {
     private String clarificationContext;
     
     /**
+     * User's answer to a clarifying question (set by APPLY_CLARIFICATION).
+     * Used by INTENT_EXTRACT to understand the clarification context.
+     */
+    private String clarificationAnswer;
+    
+    /**
+     * Expected answer type for clarification (e.g., "time_range", "account", "yes_no").
+     * Set by APPLY_CLARIFICATION, used by INTENT_EXTRACT to apply defaults if answer is unsatisfactory.
+     */
+    private String expectedAnswerType;
+    
+    /**
      * Error message if orchestration failed.
      */
     private String errorMessage;

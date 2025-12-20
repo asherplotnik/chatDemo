@@ -4,6 +4,7 @@ import com.demoBank.chatDemo.gateway.dto.ChatResponse;
 import com.demoBank.chatDemo.gateway.model.ChatSessionContext;
 import com.demoBank.chatDemo.gateway.model.RequestContext;
 import com.demoBank.chatDemo.orchestrator.model.OrchestrationState;
+import com.demoBank.chatDemo.orchestrator.prompt.IntentExtractionPrompt;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -49,12 +50,13 @@ public class OrchestratorService {
             // Step 1: LOAD_CONTEXT - Load conversation context first to understand the request
             state = loadContext(state, requestContext);
             
-            // Step 2: IF AWAITING_CLARIFICATION ? APPLY_CLARIFICATION : INTENT_EXTRACT
+            // Step 2: IF AWAITING_CLARIFICATION ? APPLY_CLARIFICATION then INTENT_EXTRACT : INTENT_EXTRACT
             if (state.isAwaitingClarification()) {
                 state = applyClarification(state, requestContext);
-            } else {
-                state = intentExtract(state, requestContext);
+                // After applying clarification, still need to extract intent with clarification context
             }
+            // Always extract intent (with clarification context if clarification was applied)
+            state = intentExtract(state, requestContext);
             
             // Step 3: RESOLVE_TIME_RANGE
             state = resolveTimeRange(state, requestContext);
@@ -206,35 +208,105 @@ public class OrchestratorService {
     }
     
     /**
-     * Step 2a: APPLY_CLARIFICATION - Apply answer to previously asked clarifying question.
+     * Step 2a: APPLY_CLARIFICATION - Extract answer to previously asked clarifying question.
+     * Stores the answer and clarification context in state for intentExtract to use.
      * 
      * @param state Current orchestration state
      * @param requestContext Request context
-     * @return Updated orchestration state with clarification applied
+     * @return Updated orchestration state with clarification answer stored
      */
     private OrchestrationState applyClarification(OrchestrationState state, RequestContext requestContext) {
-        log.debug("Step APPLY_CLARIFICATION - correlationId: {}", requestContext.getCorrelationId());
-        // TODO: Implement clarification application logic
-        // - Extract clarification answer from message
-        // - Apply answer to pending clarification
-        // - Update intent/time range/entities based on clarification
-        // - Clear clarification state
+        String correlationId = requestContext.getCorrelationId();
+        log.debug("Step APPLY_CLARIFICATION - correlationId: {}", correlationId);
+        
+        ChatSessionContext.ClarificationState clarificationState = 
+            state.getSessionContext().getClarificationState();
+        
+        if (clarificationState == null) {
+            log.warn("No clarification state found but awaiting clarification - correlationId: {}", correlationId);
+            state.setAwaitingClarification(false);
+            return state;
+        }
+        
+        String userAnswer = requestContext.getTranslatedMessageText();
+        String clarificationContext = clarificationState.getClarificationContext();
+        String expectedAnswerType = clarificationState.getExpectedAnswerType();
+        String question = clarificationState.getQuestion();
+        
+        log.info("Processing clarification answer - correlationId: {}, context: {}, expectedType: {}, question: {}, answer: {}", 
+                correlationId, clarificationContext, expectedAnswerType, question, userAnswer);
+        
+        // Store clarification answer and context in state for intentExtract to use
+        // This will be used by intentExtract to understand the context and apply defaults if needed
+        state.setClarificationAnswer(userAnswer);
+        state.setClarificationContext(clarificationContext);
+        state.setExpectedAnswerType(expectedAnswerType);
+        
+        // Store the question in state temporarily so intentExtract can use it in the prompt
+        // (We'll clear clarificationState after intentExtract uses it)
+        // Note: The question is still accessible via clarificationState until we clear it
+        
         return state;
     }
     
     /**
      * Step 2b: INTENT_EXTRACT - Extract structured intent from user message.
+     * If clarification was applied, uses system prompt with clarification context and defaults.
      * 
      * @param state Current orchestration state
      * @param requestContext Request context
      * @return Updated orchestration state with extracted intent
      */
     private OrchestrationState intentExtract(OrchestrationState state, RequestContext requestContext) {
-        log.debug("Step INTENT_EXTRACT - correlationId: {}", requestContext.getCorrelationId());
+        String correlationId = requestContext.getCorrelationId();
+        log.debug("Step INTENT_EXTRACT - correlationId: {}", correlationId);
+        
+        String systemPrompt;
+        String messageText = requestContext.getTranslatedMessageText();
+        
+        // Check if we're processing a clarification answer
+        if (state.getClarificationAnswer() != null && state.getClarificationContext() != null) {
+            log.info("Extracting intent with clarification context - correlationId: {}, context: {}, answer: {}", 
+                    correlationId, state.getClarificationContext(), state.getClarificationAnswer());
+            
+            // Get the original question from session context (still available since we haven't cleared it yet)
+            String originalQuestion = null;
+            if (state.getSessionContext() != null && 
+                state.getSessionContext().getClarificationState() != null) {
+                originalQuestion = state.getSessionContext().getClarificationState().getQuestion();
+            }
+            
+            // Use prompt with clarification context and default fallbacks
+            systemPrompt = IntentExtractionPrompt.getSystemPromptWithClarification(
+                state.getClarificationContext(),
+                state.getClarificationAnswer(),
+                state.getExpectedAnswerType(),
+                originalQuestion
+            );
+            
+            // Clear clarification state from session and state after using it
+            if (state.getSessionContext() != null) {
+                state.getSessionContext().setClarificationState(null);
+            }
+            state.setClarificationAnswer(null);
+            state.setClarificationContext(null);
+            state.setExpectedAnswerType(null);
+            state.setAwaitingClarification(false);
+        } else {
+            // Normal intent extraction without clarification
+            systemPrompt = IntentExtractionPrompt.getBaseSystemPrompt();
+        }
+        
         // TODO: Implement intent extraction logic
         // - Use LLM with function calling to extract structured intent
+        // - Call Groq API with systemPrompt and messageText
         // - Extract: domain, metric, time range hints, entity hints
         // - Store extracted intent in state
+        // - If clarification defaults were used, log it
+        
+        log.debug("Intent extraction ready - correlationId: {}, hasClarificationContext: {}", 
+                correlationId, state.getClarificationAnswer() != null);
+        
         return state;
     }
     
