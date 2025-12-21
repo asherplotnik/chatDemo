@@ -30,10 +30,18 @@ paths:
           description: Customer ID
           schema:
             type: string
-        - name: asOfDate
+        - name: fromDate
           in: query
           required: true
-          description: As-of date for valuation context (YYYY-MM-DD)
+          description: Inclusive start date (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+
+        - name: toDate
+          in: query
+          required: true
+          description: Inclusive end date (YYYY-MM-DD)
           schema:
             type: string
             format: date
@@ -185,12 +193,16 @@ components:
     QueryContext:
       type: object
       required:
-        - asOfDate
+        - fromDate
+        - toDate
         - timezone
         - includeClosed
         - page
       properties:
-        asOfDate:
+        fromDate:
+          type: string
+          format: date
+        toDate:
           type: string
           format: date
         timezone:
