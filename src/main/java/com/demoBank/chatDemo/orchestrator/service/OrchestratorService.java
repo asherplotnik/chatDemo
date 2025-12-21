@@ -21,7 +21,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 
@@ -46,6 +45,7 @@ public class OrchestratorService {
     
     private final GroqApiClient groqApiClient;
     private final ObjectMapper objectMapper;
+    private final ContextLoaderService contextLoaderService;
     
     @Value("${groq.api.intent-extraction.model:llama-3.3-70b-versatile}")
     private String intentExtractionModel;
@@ -67,7 +67,7 @@ public class OrchestratorService {
                     .build();
             
             // Step 1: LOAD_CONTEXT - Load conversation context first to understand the request
-            state = loadContext(state, requestContext);
+            state = contextLoaderService.loadContext(state, requestContext);
             
             // Step 2: IF AWAITING_CLARIFICATION ? APPLY_CLARIFICATION then INTENT_EXTRACT : INTENT_EXTRACT
             if (state.isAwaitingClarification()) {
@@ -131,129 +131,6 @@ public class OrchestratorService {
             log.error("Error in orchestration - correlationId: {}", correlationId, e);
             return createErrorResponse(correlationId, e);
         }
-    }
-    
-    /**
-     * Step 1: LOAD_CONTEXT - Load conversation context from session.
-     * 
-     * @param state Current orchestration state
-     * @param requestContext Request context
-     * @return Updated orchestration state with loaded context
-     */
-    private OrchestrationState loadContext(OrchestrationState state, RequestContext requestContext) {
-        String correlationId = requestContext.getCorrelationId();
-        log.debug("Step LOAD_CONTEXT - correlationId: {}", correlationId);
-        
-        ChatSessionContext sessionContext = requestContext.getSessionContext();
-        if (sessionContext == null) {
-            log.warn("No session context found - correlationId: {}", correlationId);
-            return state;
-        }
-        
-        // Set session context in state
-        state.setSessionContext(sessionContext);
-        
-        // Check for context expiration (30 minutes idle TTL)
-        if (sessionContext.getLastAccessedAt() != null) {
-            Duration timeSinceLastAccess = Duration.between(sessionContext.getLastAccessedAt(), Instant.now());
-            Duration sessionTtl = Duration.ofMinutes(30);
-            
-            if (timeSinceLastAccess.compareTo(sessionTtl) > 0) {
-                log.info("Session context expired - correlationId: {}, sessionId: {}, timeSinceLastAccess: {} minutes",
-                        correlationId, sessionContext.getSessionId(), timeSinceLastAccess.toMinutes());
-                // Context expired - clear it but keep session for new conversation
-                sessionContext.setLastResolvedIntent(null);
-                sessionContext.setLastResolvedTimeRange(null);
-                sessionContext.setLastSelectedEntities(null);
-                sessionContext.setClarificationState(null);
-                // Keep language and timezone as they're still valid
-            }
-        }
-        
-        // Check if awaiting clarification
-        if (sessionContext.getClarificationState() != null) {
-            state.setAwaitingClarification(true);
-            log.debug("Awaiting clarification - correlationId: {}, question: {}, expectedType: {}",
-                    correlationId,
-                    sessionContext.getClarificationState().getQuestion(),
-                    sessionContext.getClarificationState().getExpectedAnswerType());
-        }
-        
-        // Load previous intent for follow-up questions
-        if (sessionContext.getLastResolvedIntent() != null) {
-            ChatSessionContext.ResolvedIntent resolvedIntent = sessionContext.getLastResolvedIntent();
-            log.debug("Previous intent found in session - correlationId: {}, domain: {}, metric: {}",
-                    correlationId,
-                    resolvedIntent.getDomain(),
-                    resolvedIntent.getMetric());
-            
-            // Convert ResolvedIntent to IntentExtractionResponse.IntentData
-            IntentExtractionResponse.IntentData intentData = IntentExtractionResponse.IntentData.builder()
-                    .domain(resolvedIntent.getDomain())
-                    .metric(resolvedIntent.getMetric())
-                    .timeRangeHint(null) // Not stored in ResolvedIntent
-                    .entityHints(null) // Not stored in ResolvedIntent
-                    .parameters(null) // Parameters stored as string, would need parsing
-                    .build();
-            
-            state.setExtractedIntent(List.of(intentData));
-        }
-        
-        // Load previous time range for follow-up questions
-        if (sessionContext.getLastResolvedTimeRange() != null) {
-            state.setResolvedTimeRange(sessionContext.getLastResolvedTimeRange());
-            log.debug("Loaded previous time range - correlationId: {}, fromDate: {}, toDate: {}",
-                    correlationId,
-                    sessionContext.getLastResolvedTimeRange().getFromDate(),
-                    sessionContext.getLastResolvedTimeRange().getToDate());
-        }
-        
-        // Load previous selected entities for follow-up questions
-        if (sessionContext.getLastSelectedEntities() != null) {
-            log.debug("Loaded previous selected entities - correlationId: {}, accountIds: {}, cardIds: {}",
-                    correlationId,
-                    sessionContext.getLastSelectedEntities().getAccountIds() != null 
-                            ? sessionContext.getLastSelectedEntities().getAccountIds().size() : 0,
-                    sessionContext.getLastSelectedEntities().getCardIds() != null 
-                            ? sessionContext.getLastSelectedEntities().getCardIds().size() : 0);
-        }
-        
-        // Initialize defaults if not present
-        if (sessionContext.getDefaults() == null) {
-            ChatSessionContext.SessionDefaults defaults = ChatSessionContext.SessionDefaults.builder()
-                    .transactionStatus("posted") // Default to posted transactions
-                    .pagingCursorPolicy("auto") // Default to auto paging
-                    .pageSize(10) // Default page size
-                    .build();
-            sessionContext.setDefaults(defaults);
-            log.debug("Initialized default preferences - correlationId: {}", correlationId);
-        }
-        
-        // Apply context defaults to state
-        ChatSessionContext.SessionDefaults defaults = sessionContext.getDefaults();
-        if (defaults != null) {
-            log.debug("Applied context defaults - correlationId: {}, transactionStatus: {}, currency: {}, pagingPolicy: {}, pageSize: {}",
-                    correlationId,
-                    defaults.getTransactionStatus(),
-                    defaults.getCurrencyPreference(),
-                    defaults.getPagingCursorPolicy(),
-                    defaults.getPageSize());
-        }
-        
-        // Log loaded context summary
-        log.info("Loaded context - correlationId: {}, sessionId: {}, language: {}, timezone: {}, " +
-                "hasLastIntent: {}, hasTimeRange: {}, hasSelectedEntities: {}, hasClarification: {}, hasDefaults: {}",
-                correlationId,
-                sessionContext.getSessionId(),
-                sessionContext.getLanguageCode(),
-                sessionContext.getTimezone(),
-                sessionContext.getLastResolvedIntent() != null,
-                sessionContext.getLastResolvedTimeRange() != null,
-                sessionContext.getLastSelectedEntities() != null,
-                sessionContext.getClarificationState() != null,
-                sessionContext.getDefaults() != null);
-        
-        return state;
     }
     
     /**
