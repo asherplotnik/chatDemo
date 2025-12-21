@@ -7,6 +7,7 @@ import com.demoBank.chatDemo.orchestrator.dto.IntentExtractionResponse;
 import com.demoBank.chatDemo.orchestrator.model.IntentFunctionDefinition;
 import com.demoBank.chatDemo.orchestrator.model.OrchestrationState;
 import com.demoBank.chatDemo.orchestrator.prompt.IntentExtractionPrompt;
+import com.demoBank.chatDemo.orchestrator.prompt.ConversationalResponsePrompt;
 import com.demoBank.chatDemo.translation.dto.GroqApiRequest;
 import com.demoBank.chatDemo.translation.dto.GroqApiResponse;
 import com.demoBank.chatDemo.translation.service.GroqApiClient;
@@ -71,6 +72,20 @@ public class OrchestratorService {
             }
             // Always extract intent (with clarification context if clarification was applied)
             state = intentExtract(state, requestContext);
+            
+            // Check if all intents are UNKNOWN (conversational, non-banking messages)
+            if (isAllIntentsUnknown(state)) {
+                log.info("All intents are UNKNOWN - taking conversational response path - correlationId: {}", correlationId);
+                // Handle UNKNOWN intent with conversational response (skip data-fetching steps)
+                state = handleUnknownIntent(state, requestContext);
+                saveContext(state, requestContext);
+                // Ensure response is created before returning
+                if (state.getResponse() == null) {
+                    log.warn("handleUnknownIntent did not create response - correlationId: {}, creating fallback response", correlationId);
+                    state.setResponse(createUnknownIntentFallbackResponse(requestContext.getCorrelationId()));
+                }
+                return state.getResponse();
+            }
             
             // Step 3: RESOLVE_TIME_RANGE
             state = resolveTimeRange(state, requestContext);
@@ -697,6 +712,96 @@ public class OrchestratorService {
         
         state.setResponse(response);
         return response;
+    }
+    
+    /**
+     * Checks if all extracted intents have domain "UNKNOWN".
+     * 
+     * @param state Orchestration state
+     * @return true if all intents are UNKNOWN, false otherwise
+     */
+    private boolean isAllIntentsUnknown(OrchestrationState state) {
+        List<IntentExtractionResponse.IntentData> intents = state.getExtractedIntent();
+        if (intents == null || intents.isEmpty()) {
+            return false;
+        }
+        
+        // Check if all intents have domain "UNKNOWN"
+        return intents.stream()
+                .allMatch(intent -> intent != null && "UNKNOWN".equals(intent.getDomain()));
+    }
+    
+    /**
+     * Handles UNKNOWN intents (conversational, non-banking messages).
+     * Generates appropriate conversational responses using LLM.
+     * 
+     * @param state Current orchestration state
+     * @param requestContext Request context
+     * @return Updated orchestration state with conversational response
+     */
+    private OrchestrationState handleUnknownIntent(OrchestrationState state, RequestContext requestContext) {
+        String correlationId = requestContext.getCorrelationId();
+        log.debug("Step HANDLE_UNKNOWN_INTENT - correlationId: {}", correlationId);
+        
+        String messageText = requestContext.getTranslatedMessageText();
+        
+        try {
+            // Get conversational response prompt (all responses in English, translation handled later)
+            String systemPrompt = ConversationalResponsePrompt.SYSTEM_PROMPT;
+            
+            log.info("Calling Groq API for conversational response - correlationId: {}, message length: {}", 
+                    correlationId, messageText.length());
+            
+            // Call Groq API without function calling (simple chat completion)
+            GroqApiResponse groqResponse = groqApiClient.callGroqApi(
+                    systemPrompt,
+                    messageText,
+                    intentExtractionModel // Reuse the same model as intent extraction
+            );
+            
+            // Extract response content
+            String responseText = groqResponse.getContent();
+            if (responseText == null || responseText.isBlank()) {
+                log.warn("Groq API returned empty response for conversational message - correlationId: {}", correlationId);
+                throw new IllegalStateException("Groq API returned empty response");
+            }
+            
+            // Create ChatResponse
+            ChatResponse response = ChatResponse.builder()
+                    .answer(responseText.trim())
+                    .correlationId(correlationId)
+                    .explanation("Conversational response for UNKNOWN intent")
+                    .build();
+            
+            state.setResponse(response);
+            
+            log.info("Conversational response generated - correlationId: {}, response length: {}, tokens: {}", 
+                    correlationId,
+                    responseText.length(),
+                    groqResponse.getUsage() != null ? groqResponse.getUsage().getTotalTokens() : "unknown");
+            
+        } catch (Exception e) {
+            log.error("Error generating conversational response with Groq API - correlationId: {}, error: {}", 
+                    correlationId, e.getMessage(), e);
+            // Don't set response - will use fallback
+            // Log error but don't throw - let fallback handle it
+        }
+        
+        return state;
+    }
+    
+    /**
+     * Creates a fallback response for UNKNOWN intents when handleUnknownIntent fails.
+     * 
+     * @param correlationId Correlation ID
+     * @return Fallback ChatResponse
+     */
+    private ChatResponse createUnknownIntentFallbackResponse(String correlationId) {
+        return ChatResponse.builder()
+                .answer("Hello! How can I assist you with your banking needs today?")
+                .correlationId(correlationId)
+                .explanation("Fallback response for UNKNOWN intent")
+                .build();
     }
     
     /**
