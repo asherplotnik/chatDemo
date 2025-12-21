@@ -74,7 +74,6 @@ public class OrchestratorService {
                 log.info("All intents are UNKNOWN - taking conversational response path - correlationId: {}", correlationId);
                 // Handle UNKNOWN intent with conversational response (skip data-fetching steps)
                 state = intentService.handleUnknownIntent(state, requestContext);
-                saveContext(state, requestContext);
                 // Ensure response is created before returning
                 if (state.getResponse() == null) {
                     log.warn("handleUnknownIntent did not create response - correlationId: {}, creating fallback response", correlationId);
@@ -92,7 +91,6 @@ public class OrchestratorService {
             // Step 5: IF NEEDS_CLARIFIER -> ASK_CLARIFIER -> SAVE_CONTEXT -> END
             if (state.needsClarifier()) {
                 state = clarificationService.askClarifier(state, requestContext);
-                saveContext(state, requestContext);
                 // Ensure response is created before returning
                 if (state.getResponse() == null) {
                     log.warn("askClarifier did not create response - correlationId: {}, creating fallback response", correlationId);
@@ -220,10 +218,10 @@ public class OrchestratorService {
         // - Store drafted response in state
         return state;
     }
-    
+
     /**
      * Step 10: SAVE_CONTEXT - Save conversation context to session.
-     * 
+     *
      * @param state Current orchestration state
      * @param requestContext Request context
      */
