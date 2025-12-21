@@ -1,12 +1,10 @@
 package com.demoBank.chatDemo.orchestrator.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -57,16 +55,96 @@ public class BankingApiClient {
     }
     
     /**
+     * Generic method to call banking APIs.
+     * 
+     * All banking APIs follow a consistent pattern with fromDate/toDate parameters.
+     * This method handles the common HTTP GET request pattern.
+     * 
+     * @param customerId Customer ID (from trusted source)
+     * @param fromDate Start date (YYYY-MM-DD)
+     * @param toDate End date (YYYY-MM-DD)
+     * @param accountIds Optional list of account IDs to filter (for account-based APIs)
+     * @param includeTransactions Whether to include transactions (for transaction APIs)
+     * @param path API endpoint path (e.g., "/v1/current-accounts/transactions")
+     * @param nickname Optional nickname/last4Digits for credit card filtering
+     * @param correlationId Correlation ID for logging
+     * @return API response as Map/Object
+     */
+    private Map<String, Object> callBankingApi(
+            String customerId,
+            String fromDate,
+            String toDate,
+            List<String> accountIds,
+            Boolean includeTransactions,
+            String path,
+            String nickname,
+            String correlationId) {
+        
+        log.info("Calling {} API - correlationId: {}, customerId: {}, fromDate: {}, toDate: {}",
+                path, correlationId, maskCustomerId(customerId), fromDate, toDate);
+        
+        try {
+            RestClient.RequestHeadersSpec<?> request = getRestClient().get()
+                    .uri(uriBuilder -> {
+                        uriBuilder.path(path)
+                                .queryParam("fromDate", fromDate)
+                                .queryParam("toDate", toDate);
+
+                        // Add optional parameters
+                        if (accountIds != null && !accountIds.isEmpty()) {
+                            // accountList is an array parameter with explode: true
+                            for (String accountId : accountIds) {
+                                uriBuilder.queryParam("accountList", accountId);
+                            }
+                        }
+                        if (includeTransactions != null) {
+                            // Securities API uses includePositions instead of includeTransactions
+                            if (path.contains("securities")) {
+                                uriBuilder.queryParam("includePositions", includeTransactions);
+                            } else {
+                                uriBuilder.queryParam("includeTransactions", includeTransactions);
+                            }
+                        }
+                        if (nickname != null && !nickname.isBlank()) {
+                            // For credit cards, nickname is used as last4Digits
+                            if (path.contains("credit-cards")) {
+                                uriBuilder.queryParam("last4Digits", nickname);
+                            } else {
+                                uriBuilder.queryParam("nicknameFilter", nickname);
+                            }
+                        }
+                        return uriBuilder.build();
+                    })
+                    .header("customerID", customerId)
+                    .header("X-Correlation-Id", correlationId);
+            
+            Map<String, Object> response = request.retrieve()
+                    .onStatus(status -> status.isError(), (req, res) -> {
+                        log.error("{} API error - correlationId: {}, status: {}, customerId: {}",
+                                path, correlationId, res.getStatusCode(), maskCustomerId(customerId));
+                        throw new RuntimeException("API call failed with status: " + res.getStatusCode());
+                    })
+                    .body(new ParameterizedTypeReference<>() {});
+            
+            log.info("{} API call successful - correlationId: {}, customerId: {}",
+                    path, correlationId, maskCustomerId(customerId));
+            
+            return response;
+            
+        } catch (Exception e) {
+            log.error("Error calling {} API - correlationId: {}, customerId: {}, error: {}",
+                    path, correlationId, maskCustomerId(customerId), e.getMessage(), e);
+            throw new RuntimeException("Failed to call " + path + " API: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
      * Calls the Current Accounts Transactions API.
      * 
      * @param customerId Customer ID (from trusted source)
      * @param fromDate Start date (YYYY-MM-DD)
      * @param toDate End date (YYYY-MM-DD)
      * @param accountIds Optional list of account IDs to filter
-     * @param includePending Whether to include pending transactions (default: true)
-     * @param pageSize Max number of transactions per account (default: 100, max: 500)
-     * @param cursor Cursor for pagination (optional)
-     * @param timezone IANA timezone (default: Asia/Jerusalem)
      * @param includeTransactions Whether to include transactions (default: true)
      * @param correlationId Correlation ID for logging
      * @return API response as Map/Object
@@ -76,69 +154,19 @@ public class BankingApiClient {
             String fromDate,
             String toDate,
             List<String> accountIds,
-            Boolean includePending,
-            Integer pageSize,
-            String cursor,
-            String timezone,
             Boolean includeTransactions,
             String correlationId) {
         
-        log.info("Calling Current Accounts Transactions API - correlationId: {}, customerId: {}, fromDate: {}, toDate: {}", 
-                correlationId, maskCustomerId(customerId), fromDate, toDate);
-        
-        try {
-            RestClient.RequestHeadersSpec<?> request = getRestClient().get()
-                    .uri(uriBuilder -> {
-                        uriBuilder.path("/v1/current-accounts/transactions")
-                                .queryParam("fromDate", fromDate)
-                                .queryParam("toDate", toDate);
-                        
-                        // Add optional parameters
-                        if (includePending != null) {
-                            uriBuilder.queryParam("includePending", includePending);
-                        }
-                        if (pageSize != null) {
-                            uriBuilder.queryParam("pageSize", pageSize);
-                        }
-                        if (cursor != null) {
-                            uriBuilder.queryParam("cursor", cursor);
-                        }
-                        if (timezone != null && !timezone.isBlank()) {
-                            uriBuilder.queryParam("timezone", timezone);
-                        }
-                        if (accountIds != null && !accountIds.isEmpty()) {
-                            // accountList is an array parameter with explode: true
-                            for (String accountId : accountIds) {
-                                uriBuilder.queryParam("accountList", accountId);
-                            }
-                        }
-                        if (includeTransactions != null) {
-                            uriBuilder.queryParam("includeTransactions", includeTransactions);
-                        }
-                        
-                        return uriBuilder.build();
-                    })
-                    .header("customerID", customerId)
-                    .header("X-Correlation-Id", correlationId);
-            
-            Map<String, Object> response = request.retrieve()
-                    .onStatus(status -> status.isError(), (req, res) -> {
-                        log.error("Current Accounts Transactions API error - correlationId: {}, status: {}, customerId: {}", 
-                                correlationId, res.getStatusCode(), maskCustomerId(customerId));
-                        throw new RuntimeException("API call failed with status: " + res.getStatusCode());
-                    })
-                    .body(new ParameterizedTypeReference<>() {});
-            
-            log.info("Current Accounts Transactions API call successful - correlationId: {}, customerId: {}", 
-                    correlationId, maskCustomerId(customerId));
-            
-            return response;
-            
-        } catch (Exception e) {
-            log.error("Error calling Current Accounts Transactions API - correlationId: {}, customerId: {}, error: {}", 
-                    correlationId, maskCustomerId(customerId), e.getMessage(), e);
-            throw new RuntimeException("Failed to call Current Accounts Transactions API: " + e.getMessage(), e);
-        }
+        return callBankingApi(
+                customerId,
+                fromDate,
+                toDate,
+                accountIds,
+                includeTransactions,
+                "/v1/current-accounts/transactions",
+                null,
+                correlationId
+        );
     }
     
     /**
@@ -151,18 +179,23 @@ public class BankingApiClient {
      * @param correlationId Correlation ID for logging
      * @return API response as Map/Object
      */
-    public Object getForeignCurrentAccountsTransactions(
+    public Map<String, Object> getForeignCurrentAccountsTransactions(
             String customerId,
             String fromDate,
             String toDate,
-            java.util.List<String> accountIds,
+            List<String> accountIds,
             String correlationId) {
         
-        log.info("Calling Foreign Current Accounts Transactions API - correlationId: {}, customerId: {}, fromDate: {}, toDate: {}", 
-                correlationId, maskCustomerId(customerId), fromDate, toDate);
-        
-        // TODO: Implement API call
-        return null;
+        return callBankingApi(
+                customerId,
+                fromDate,
+                toDate,
+                accountIds,
+                true, // includeTransactions default true
+                "/v1/foreign-current-accounts/transactions",
+                null,
+                correlationId
+        );
     }
     
     /**
@@ -171,24 +204,27 @@ public class BankingApiClient {
      * @param customerId Customer ID (from trusted source)
      * @param fromDate Start date (YYYY-MM-DD)
      * @param toDate End date (YYYY-MM-DD)
-     * @param cardIds Optional list of card IDs to filter
-     * @param includePending Whether to include pending transactions
+     * @param last4Digits Optional last 4 digits of card to filter (nickname)
      * @param correlationId Correlation ID for logging
      * @return API response as Map/Object
      */
-    public Object getCreditCards(
+    public Map<String, Object> getCreditCards(
             String customerId,
             String fromDate,
             String toDate,
-            java.util.List<String> cardIds,
-            Boolean includePending,
+            String last4Digits,
             String correlationId) {
         
-        log.info("Calling Credit Cards API - correlationId: {}, customerId: {}, fromDate: {}, toDate: {}", 
-                correlationId, maskCustomerId(customerId), fromDate, toDate);
-        
-        // TODO: Implement API call
-        return null;
+        return callBankingApi(
+                customerId,
+                fromDate,
+                toDate,
+                null, // accountIds not used for credit cards
+                true, // includeTransactions default true
+                "/v1/credit-cards/transactions",
+                last4Digits, // nickname used as last4Digits for credit cards
+                correlationId
+        );
     }
     
     /**
@@ -197,20 +233,29 @@ public class BankingApiClient {
      * @param customerId Customer ID (from trusted source)
      * @param fromDate Start date (YYYY-MM-DD)
      * @param toDate End date (YYYY-MM-DD)
+     * @param includeTransactions Whether to include transactions
+     * @param nickname Optional nickname to filter
      * @param correlationId Correlation ID for logging
      * @return API response as Map/Object
      */
-    public Object getLoans(
+    public Map<String, Object> getLoans(
             String customerId,
             String fromDate,
             String toDate,
+            Boolean includeTransactions,
+            String nickname,
             String correlationId) {
         
-        log.info("Calling Loans API - correlationId: {}, customerId: {}, fromDate: {}, toDate: {}", 
-                correlationId, maskCustomerId(customerId), fromDate, toDate);
-        
-        // TODO: Implement API call
-        return null;
+        return callBankingApi(
+                customerId,
+                fromDate,
+                toDate,
+                null, // accountIds not used
+                includeTransactions,
+                "/v1/loans",
+                nickname,
+                correlationId
+        );
     }
     
     /**
@@ -219,20 +264,29 @@ public class BankingApiClient {
      * @param customerId Customer ID (from trusted source)
      * @param fromDate Start date (YYYY-MM-DD)
      * @param toDate End date (YYYY-MM-DD)
+     * @param includeTransactions Whether to include transactions
+     * @param nickname Optional nickname to filter
      * @param correlationId Correlation ID for logging
      * @return API response as Map/Object
      */
-    public Object getMortgages(
+    public Map<String, Object> getMortgages(
             String customerId,
             String fromDate,
             String toDate,
+            Boolean includeTransactions,
+            String nickname,
             String correlationId) {
         
-        log.info("Calling Mortgages API - correlationId: {}, customerId: {}, fromDate: {}, toDate: {}", 
-                correlationId, maskCustomerId(customerId), fromDate, toDate);
-        
-        // TODO: Implement API call
-        return null;
+        return callBankingApi(
+                customerId,
+                fromDate,
+                toDate,
+                null, // accountIds not used
+                includeTransactions,
+                "/v1/mortgages",
+                nickname,
+                correlationId
+        );
     }
     
     /**
@@ -241,20 +295,29 @@ public class BankingApiClient {
      * @param customerId Customer ID (from trusted source)
      * @param fromDate Start date (YYYY-MM-DD)
      * @param toDate End date (YYYY-MM-DD)
+     * @param includeTransactions Whether to include transactions
+     * @param nickname Optional nickname to filter
      * @param correlationId Correlation ID for logging
      * @return API response as Map/Object
      */
-    public Object getDeposits(
+    public Map<String, Object> getDeposits(
             String customerId,
             String fromDate,
             String toDate,
+            Boolean includeTransactions,
+            String nickname,
             String correlationId) {
         
-        log.info("Calling Deposits API - correlationId: {}, customerId: {}, fromDate: {}, toDate: {}", 
-                correlationId, maskCustomerId(customerId), fromDate, toDate);
-        
-        // TODO: Implement API call
-        return null;
+        return callBankingApi(
+                customerId,
+                fromDate,
+                toDate,
+                null, // accountIds not used
+                includeTransactions,
+                "/v1/deposits",
+                nickname,
+                correlationId
+        );
     }
     
     /**
@@ -263,20 +326,27 @@ public class BankingApiClient {
      * @param customerId Customer ID (from trusted source)
      * @param fromDate Start date (YYYY-MM-DD)
      * @param toDate End date (YYYY-MM-DD)
+     * @param includePositions Whether to include positions
      * @param correlationId Correlation ID for logging
      * @return API response as Map/Object
      */
-    public Object getSecurities(
+    public Map<String, Object> getSecurities(
             String customerId,
             String fromDate,
             String toDate,
+            Boolean includePositions,
             String correlationId) {
         
-        log.info("Calling Securities API - correlationId: {}, customerId: {}, fromDate: {}, toDate: {}", 
-                correlationId, maskCustomerId(customerId), fromDate, toDate);
-        
-        // TODO: Implement API call
-        return null;
+        return callBankingApi(
+                customerId,
+                fromDate,
+                toDate,
+                null, // accountIds not used
+                includePositions,
+                "/v1/securities",
+                null,
+                correlationId
+        );
     }
     
     /**
