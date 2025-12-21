@@ -5,7 +5,6 @@ import com.demoBank.chatDemo.gateway.model.ChatSessionContext;
 import com.demoBank.chatDemo.gateway.model.RequestContext;
 import com.demoBank.chatDemo.orchestrator.dto.IntentExtractionResponse;
 import com.demoBank.chatDemo.orchestrator.model.OrchestrationState;
-import com.demoBank.chatDemo.orchestrator.prompt.ConversationalResponsePrompt;
 import com.demoBank.chatDemo.translation.dto.GroqApiRequest;
 import com.demoBank.chatDemo.translation.dto.GroqApiResponse;
 import com.demoBank.chatDemo.translation.service.GroqApiClient;
@@ -15,7 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
 import java.util.List;
 
 /**
@@ -40,11 +38,9 @@ public class OrchestratorService {
     private final GroqApiClient groqApiClient;
     private final ObjectMapper objectMapper;
     private final ContextLoaderService contextLoaderService;
-    private final IntentExtractionService intentExtractionService;
+    private final ClarificationService clarificationService;
+    private final IntentService intentService;
     private final TimeRangeResolutionService timeRangeResolutionService;
-    
-    @Value("${groq.api.intent-extraction.model:llama-3.3-70b-versatile}")
-    private String intentExtractionModel;
     
     /**
      * Main orchestration method - processes a chat request through the complete workflow.
@@ -67,22 +63,22 @@ public class OrchestratorService {
             
             // Step 2: IF AWAITING_CLARIFICATION ? APPLY_CLARIFICATION then INTENT_EXTRACT : INTENT_EXTRACT
             if (state.isAwaitingClarification()) {
-                state = applyClarification(state, requestContext);
+                state = clarificationService.applyClarification(state, requestContext);
                 // After applying clarification, still need to extract intent with clarification context
             }
             // Always extract intent (with clarification context if clarification was applied)
-            state = intentExtractionService.extractIntent(state, requestContext);
+            state = intentService.extractIntent(state, requestContext);
             
             // Check if all intents are UNKNOWN (conversational, non-banking messages)
             if (isAllIntentsUnknown(state)) {
                 log.info("All intents are UNKNOWN - taking conversational response path - correlationId: {}", correlationId);
                 // Handle UNKNOWN intent with conversational response (skip data-fetching steps)
-                state = handleUnknownIntent(state, requestContext);
+                state = intentService.handleUnknownIntent(state, requestContext);
                 saveContext(state, requestContext);
                 // Ensure response is created before returning
                 if (state.getResponse() == null) {
                     log.warn("handleUnknownIntent did not create response - correlationId: {}, creating fallback response", correlationId);
-                    state.setResponse(createUnknownIntentFallbackResponse(requestContext.getCorrelationId()));
+                    state.setResponse(intentService.createUnknownIntentFallbackResponse(requestContext.getCorrelationId()));
                 }
                 return state.getResponse();
             }
@@ -95,12 +91,12 @@ public class OrchestratorService {
             
             // Step 5: IF NEEDS_CLARIFIER -> ASK_CLARIFIER -> SAVE_CONTEXT -> END
             if (state.needsClarifier()) {
-                state = askClarifier(state, requestContext);
+                state = clarificationService.askClarifier(state, requestContext);
                 saveContext(state, requestContext);
                 // Ensure response is created before returning
                 if (state.getResponse() == null) {
                     log.warn("askClarifier did not create response - correlationId: {}, creating fallback response", correlationId);
-                    state.setResponse(createClarificationFallbackResponse(requestContext.getCorrelationId(), state.getClarificationNeeded()));
+                    state.setResponse(clarificationService.createClarificationFallbackResponse(requestContext.getCorrelationId(), state.getClarificationNeeded()));
                 }
                 return state.getResponse();
             }
@@ -130,48 +126,6 @@ public class OrchestratorService {
     }
     
     /**
-     * Step 2a: APPLY_CLARIFICATION - Extract answer to previously asked clarifying question.
-     * Stores the answer and clarification context in state for intentExtract to use.
-     * 
-     * @param state Current orchestration state
-     * @param requestContext Request context
-     * @return Updated orchestration state with clarification answer stored
-     */
-    private OrchestrationState applyClarification(OrchestrationState state, RequestContext requestContext) {
-        String correlationId = requestContext.getCorrelationId();
-        log.debug("Step APPLY_CLARIFICATION - correlationId: {}", correlationId);
-        
-        ChatSessionContext.ClarificationState clarificationState = 
-            state.getSessionContext().getClarificationState();
-        
-        if (clarificationState == null) {
-            log.warn("No clarification state found but awaiting clarification - correlationId: {}", correlationId);
-            state.setAwaitingClarification(false);
-            return state;
-        }
-        
-        String userAnswer = requestContext.getTranslatedMessageText();
-        String clarificationContext = clarificationState.getClarificationContext();
-        String expectedAnswerType = clarificationState.getExpectedAnswerType();
-        String question = clarificationState.getQuestion();
-        
-        log.info("Processing clarification answer - correlationId: {}, context: {}, expectedType: {}, question: {}, answer: {}", 
-                correlationId, clarificationContext, expectedAnswerType, question, userAnswer);
-        
-        // Store clarification answer and context in state for intentExtract to use
-        // This will be used by intentExtract to understand the context and apply defaults if needed
-        state.setClarificationAnswer(userAnswer);
-        state.setClarificationContext(clarificationContext);
-        state.setExpectedAnswerType(expectedAnswerType);
-        
-        // Store the question in state temporarily so intentExtract can use it in the prompt
-        // (We'll clear clarificationState after intentExtract uses it)
-        // Note: The question is still accessible via clarificationState until we clear it
-        
-        return state;
-    }
-    
-    /**
      * Step 4: PLAN - Choose which read-only APIs to call.
      * 
      * @param state Current orchestration state
@@ -192,104 +146,6 @@ public class OrchestratorService {
         // - IMPORTANT: Plan must include customerId from state.getCustomerId() (trusted source)
         // - NEVER use customerId from messageText - only from RequestContext
         return state;
-    }
-    
-    /**
-     * Step 5: ASK_CLARIFIER - Ask a clarifying question if intent is ambiguous.
-     * 
-     * @param state Current orchestration state
-     * @param requestContext Request context
-     * @return Updated orchestration state with clarification question
-     */
-    private OrchestrationState askClarifier(OrchestrationState state, RequestContext requestContext) {
-        String correlationId = requestContext.getCorrelationId();
-        log.debug("Step ASK_CLARIFIER - correlationId: {}", correlationId);
-        
-        String clarificationNeeded = state.getClarificationNeeded();
-        String question = generateClarificationQuestion(clarificationNeeded, state);
-        
-        // Set clarification state in session
-        if (state.getSessionContext() != null) {
-            ChatSessionContext.ClarificationState clarificationState = ChatSessionContext.ClarificationState.builder()
-                    .question(question)
-                    .expectedAnswerType(getExpectedAnswerType(clarificationNeeded))
-                    .clarificationContext(clarificationNeeded)
-                    .askedAt(Instant.now())
-                    .build();
-            state.getSessionContext().setClarificationState(clarificationState);
-        }
-        
-        // Create response with clarification question
-        ChatResponse response = ChatResponse.builder()
-                .answer(question)
-                .correlationId(correlationId)
-                .explanation("Clarification needed: " + clarificationNeeded)
-                .build();
-        
-        state.setResponse(response);
-        log.info("Clarification question asked - correlationId: {}, question: {}", correlationId, question);
-        
-        return state;
-    }
-    
-    /**
-     * Generates a clarification question based on what needs clarification.
-     * 
-     * @param clarificationNeeded What needs clarification (e.g., "domain", "metric", "time_range", "account_selection")
-     * @param state Orchestration state
-     * @return Clarification question string
-     */
-    private String generateClarificationQuestion(String clarificationNeeded, OrchestrationState state) {
-        if (clarificationNeeded == null) {
-            return "Could you please provide more details about your request?";
-        }
-        
-        return switch (clarificationNeeded.toLowerCase()) {
-            case "domain" -> "Which type of information are you looking for? (e.g., accounts, credit cards, loans, mortgages, deposits, securities)";
-            case "metric" -> "What would you like to know? (e.g., balance, list of transactions, total amount, count)";
-            case "time_range" -> "Which time period would you like? (e.g., last week, last month, yesterday, or specific dates)";
-            case "account_selection" -> "Which account would you like to check? (e.g., main account, or specify account number)";
-            default -> "Could you please provide more details about: " + clarificationNeeded + "?";
-        };
-    }
-    
-    /**
-     * Gets the expected answer type for a clarification context.
-     * 
-     * @param clarificationNeeded What needs clarification
-     * @return Expected answer type
-     */
-    private String getExpectedAnswerType(String clarificationNeeded) {
-        if (clarificationNeeded == null) {
-            return "text";
-        }
-        
-        return switch (clarificationNeeded.toLowerCase()) {
-            case "time_range" -> "time_range";
-            case "account_selection" -> "account";
-            case "domain" -> "domain";
-            case "metric" -> "metric";
-            default -> "text";
-        };
-    }
-    
-    /**
-     * Creates a fallback clarification response if askClarifier fails to create one.
-     * 
-     * @param correlationId Correlation ID
-     * @param clarificationNeeded What needs clarification
-     * @return Fallback ChatResponse
-     */
-    private ChatResponse createClarificationFallbackResponse(String correlationId, String clarificationNeeded) {
-        String question = clarificationNeeded != null 
-                ? "Could you please provide more details about: " + clarificationNeeded + "?"
-                : "Could you please provide more details about your request?";
-        
-        return ChatResponse.builder()
-                .answer(question)
-                .correlationId(correlationId)
-                .explanation("Clarification needed: " + (clarificationNeeded != null ? clarificationNeeded : "unknown"))
-                .build();
     }
     
     /**
@@ -428,79 +284,6 @@ public class OrchestratorService {
         // Check if all intents have domain "UNKNOWN"
         return intents.stream()
                 .allMatch(intent -> intent != null && "UNKNOWN".equals(intent.getDomain()));
-    }
-    
-    /**
-     * Handles UNKNOWN intents (conversational, non-banking messages).
-     * Generates appropriate conversational responses using LLM.
-     * 
-     * @param state Current orchestration state
-     * @param requestContext Request context
-     * @return Updated orchestration state with conversational response
-     */
-    private OrchestrationState handleUnknownIntent(OrchestrationState state, RequestContext requestContext) {
-        String correlationId = requestContext.getCorrelationId();
-        log.debug("Step HANDLE_UNKNOWN_INTENT - correlationId: {}", correlationId);
-        
-        String messageText = requestContext.getTranslatedMessageText();
-        
-        try {
-            // Get conversational response prompt (all responses in English, translation handled later)
-            String systemPrompt = ConversationalResponsePrompt.SYSTEM_PROMPT;
-            
-            log.info("Calling Groq API for conversational response - correlationId: {}, message length: {}", 
-                    correlationId, messageText.length());
-            
-            // Call Groq API without function calling (simple chat completion)
-            GroqApiResponse groqResponse = groqApiClient.callGroqApi(
-                    systemPrompt,
-                    messageText,
-                    intentExtractionModel // Reuse the same model as intent extraction
-            );
-            
-            // Extract response content
-            String responseText = groqResponse.getContent();
-            if (responseText == null || responseText.isBlank()) {
-                log.warn("Groq API returned empty response for conversational message - correlationId: {}", correlationId);
-                throw new IllegalStateException("Groq API returned empty response");
-            }
-            
-            // Create ChatResponse
-            ChatResponse response = ChatResponse.builder()
-                    .answer(responseText.trim())
-                    .correlationId(correlationId)
-                    .explanation("Conversational response for UNKNOWN intent")
-                    .build();
-            
-            state.setResponse(response);
-            
-            log.info("Conversational response generated - correlationId: {}, response length: {}, tokens: {}", 
-                    correlationId,
-                    responseText.length(),
-                    groqResponse.getUsage() != null ? groqResponse.getUsage().getTotalTokens() : "unknown");
-            
-        } catch (Exception e) {
-            log.error("Error generating conversational response with Groq API - correlationId: {}, error: {}", 
-                    correlationId, e.getMessage(), e);
-            // Don't set response - will use fallback
-            // Log error but don't throw - let fallback handle it
-        }
-        
-        return state;
-    }
-    
-    /**
-     * Creates a fallback response for UNKNOWN intents when handleUnknownIntent fails.
-     * 
-     * @param correlationId Correlation ID
-     * @return Fallback ChatResponse
-     */
-    private ChatResponse createUnknownIntentFallbackResponse(String correlationId) {
-        return ChatResponse.builder()
-                .answer("Hello! How can I assist you with your banking needs today?")
-                .correlationId(correlationId)
-                .explanation("Fallback response for UNKNOWN intent")
-                .build();
     }
     
     /**

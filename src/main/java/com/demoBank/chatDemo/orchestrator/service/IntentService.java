@@ -1,9 +1,11 @@
 package com.demoBank.chatDemo.orchestrator.service;
 
+import com.demoBank.chatDemo.gateway.dto.ChatResponse;
 import com.demoBank.chatDemo.gateway.model.RequestContext;
 import com.demoBank.chatDemo.orchestrator.dto.IntentExtractionResponse;
 import com.demoBank.chatDemo.orchestrator.model.IntentFunctionDefinition;
 import com.demoBank.chatDemo.orchestrator.model.OrchestrationState;
+import com.demoBank.chatDemo.orchestrator.prompt.ConversationalResponsePrompt;
 import com.demoBank.chatDemo.orchestrator.prompt.IntentExtractionPrompt;
 import com.demoBank.chatDemo.translation.dto.GroqApiRequest;
 import com.demoBank.chatDemo.translation.dto.GroqApiResponse;
@@ -17,17 +19,18 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 /**
- * Service for extracting structured intent from user messages.
+ * Service for intent processing - extraction and handling.
  * 
  * Handles:
  * - Intent extraction using LLM with function calling
+ * - Handling UNKNOWN intents with conversational responses
  * - Clarification context handling
  * - System prompt selection based on clarification state
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class IntentExtractionService {
+public class IntentService {
     
     private final GroqApiClient groqApiClient;
     private final ObjectMapper objectMapper;
@@ -194,5 +197,78 @@ public class IntentExtractionService {
             // Normal intent extraction without clarification
             return IntentExtractionPrompt.getBaseSystemPrompt();
         }
+    }
+    
+    /**
+     * Handles UNKNOWN intents (conversational, non-banking messages).
+     * Generates appropriate conversational responses using LLM.
+     * 
+     * @param state Current orchestration state
+     * @param requestContext Request context
+     * @return Updated orchestration state with conversational response
+     */
+    public OrchestrationState handleUnknownIntent(OrchestrationState state, RequestContext requestContext) {
+        String correlationId = requestContext.getCorrelationId();
+        log.debug("Step HANDLE_UNKNOWN_INTENT - correlationId: {}", correlationId);
+        
+        String messageText = requestContext.getTranslatedMessageText();
+        
+        try {
+            // Get conversational response prompt (all responses in English, translation handled later)
+            String systemPrompt = ConversationalResponsePrompt.SYSTEM_PROMPT;
+            
+            log.info("Calling Groq API for conversational response - correlationId: {}, message length: {}", 
+                    correlationId, messageText.length());
+            
+            // Call Groq API without function calling (simple chat completion)
+            GroqApiResponse groqResponse = groqApiClient.callGroqApi(
+                    systemPrompt,
+                    messageText,
+                    intentExtractionModel // Reuse the same model as intent extraction
+            );
+            
+            // Extract response content
+            String responseText = groqResponse.getContent();
+            if (responseText == null || responseText.isBlank()) {
+                log.warn("Groq API returned empty response for conversational message - correlationId: {}", correlationId);
+                throw new IllegalStateException("Groq API returned empty response");
+            }
+            
+            // Create ChatResponse
+            ChatResponse response = ChatResponse.builder()
+                    .answer(responseText.trim())
+                    .correlationId(correlationId)
+                    .explanation("Conversational response for UNKNOWN intent")
+                    .build();
+            
+            state.setResponse(response);
+            
+            log.info("Conversational response generated - correlationId: {}, response length: {}, tokens: {}", 
+                    correlationId,
+                    responseText.length(),
+                    groqResponse.getUsage() != null ? groqResponse.getUsage().getTotalTokens() : "unknown");
+            
+        } catch (Exception e) {
+            log.error("Error generating conversational response with Groq API - correlationId: {}, error: {}", 
+                    correlationId, e.getMessage(), e);
+            // Don't set response - will use fallback
+            // Log error but don't throw - let fallback handle it
+        }
+        
+        return state;
+    }
+    
+    /**
+     * Creates a fallback response for UNKNOWN intents when handleUnknownIntent fails.
+     * 
+     * @param correlationId Correlation ID
+     * @return Fallback ChatResponse
+     */
+    public ChatResponse createUnknownIntentFallbackResponse(String correlationId) {
+        return ChatResponse.builder()
+                .answer("Hello! How can I assist you with your banking needs today?")
+                .correlationId(correlationId)
+                .explanation("Fallback response for UNKNOWN intent")
+                .build();
     }
 }
