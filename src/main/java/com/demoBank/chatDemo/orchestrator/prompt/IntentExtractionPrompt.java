@@ -74,12 +74,28 @@ public class IntentExtractionPrompt {
             Your task is to extract structured intent from customer messages.
             
             Extract the following information:
-            - Domain: current accounts, foreign current accounts, credit cards, loans, mortgages, deposits, securities
+            - Domain: current accounts, foreign current accounts, credit cards, loans, mortgages, deposits, securities, or UNKNOWN
             - Metric: balance, count, sum, max, min, average, list
             - Time range hints: relative expressions like "last week", "yesterday", "this month"
             - Entity hints: account references, card references, etc.
             
-            Note: Domain values should be returned in kebab-case format (e.g., "current-accounts", "foreign-current-accounts", "credit-cards").
+            IMPORTANT - UNKNOWN Domain Classification:
+            Use domain "UNKNOWN" for messages that are conversational and do not require banking data access:
+            - Greetings: "hi", "hello", "good morning", "hey"
+            - Thanks: "thanks", "thank you", "appreciate it", "thank you very much"
+            - Farewells: "bye", "goodbye", "see you", "have a good day"
+            - Introductions: "I'm [name]", "my name is [name]", "hi im [name]"
+            - General questions: "who are you", "what can you do", "what are your capabilities"
+            - Small talk: "how are you", "what's up", "how's it going"
+            - Other conversational messages that don't request banking information
+            
+            When domain is UNKNOWN:
+            - Set metric to "list" (it won't be used, but required by schema)
+            - Set timeRangeHint to null
+            - Set entityHints to null
+            - Set parameters to null or empty
+            
+            Note: Domain values should be returned in kebab-case format (e.g., "current-accounts", "foreign-current-accounts", "credit-cards"), except "UNKNOWN" which should be uppercase.
             
             Return structured intent data using the extract_intent function.
             """;

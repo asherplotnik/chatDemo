@@ -26,8 +26,8 @@ public class IntentFunctionDefinition {
                         "properties", Map.of(
                             "domain", Map.of(
                                 "type", "string",
-                                "description", "Domain: current accounts, foreign current accounts, credit cards, loans, mortgages, deposits, securities",
-                                "enum", List.of("current-accounts", "foreign-current-accounts", "credit-cards", "loans", "mortgages", "deposits", "securities")
+                                "description", "Domain: current accounts, foreign current accounts, credit cards, loans, mortgages, deposits, securities, or UNKNOWN for non-banking conversational messages",
+                                "enum", List.of("current-accounts", "foreign-current-accounts", "credit-cards", "loans", "mortgages", "deposits", "securities", "UNKNOWN")
                             ),
                             "metric", Map.of(
                                 "type", "string",
