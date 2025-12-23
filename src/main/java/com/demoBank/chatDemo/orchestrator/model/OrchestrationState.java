@@ -52,15 +52,19 @@ public class OrchestrationState {
     
     /**
      * Raw API responses.
-     * TODO: Create appropriate models for API responses
+     * Format: List<Map<String, Object>> where each map contains:
+     * - domain: string
+     * - metric: string
+     * - intent: IntentData
+     * - apiResponse: Map/Object (the actual API response)
      */
     private Object fetchedData;
     
     /**
      * Normalized data (canonical internal models).
-     * TODO: Create normalized data models
+     * Format: List<NormalizedData> - one per domain
      */
-    private Object normalizedData;
+    private java.util.List<com.demoBank.chatDemo.orchestrator.model.NormalizedData> normalizedData;
     
     /**
      * Computed results.

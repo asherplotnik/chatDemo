@@ -43,6 +43,7 @@ public class OrchestratorService {
     private final IntentService intentService;
     private final TimeRangeResolutionService timeRangeResolutionService;
     private final FetchService fetchService;
+    private final NormalizationService normalizationService;
     
     /**
      * Main orchestration method - processes a chat request through the complete workflow.
@@ -104,7 +105,7 @@ public class OrchestratorService {
             
             
             // Step 5: NORMALIZE
-            state = normalize(state, requestContext);
+            state = normalizationService.normalize(state, requestContext);
             
             // Step 6: COMPUTE
             state = compute(state, requestContext);
@@ -126,21 +127,6 @@ public class OrchestratorService {
     
     
     
-    /**
-     * Step 5: NORMALIZE - Convert API responses to canonical internal models.
-     * 
-     * @param state Current orchestration state
-     * @param requestContext Request context
-     * @return Updated orchestration state with normalized data
-     */
-    private OrchestrationState normalize(OrchestrationState state, RequestContext requestContext) {
-        log.debug("Step NORMALIZE - correlationId: {}", requestContext.getCorrelationId());
-        // TODO: Implement normalization logic
-        // - Convert different API response formats to unified models
-        // - Handle different data structures
-        // - Store normalized data in state
-        return state;
-    }
     
     /**
      * Step 6: COMPUTE - Perform deterministic calculations.
