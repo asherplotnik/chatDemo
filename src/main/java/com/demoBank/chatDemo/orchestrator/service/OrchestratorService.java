@@ -84,14 +84,9 @@ public class OrchestratorService {
                 return state.getResponse();
             }
             
-            // Step 3: RESOLVE_TIME_RANGE
-            state = timeRangeResolutionService.resolveTimeRange(state, requestContext);
-            
-            // Step 4: FETCH
-            state = fetchService.fetchData(state, requestContext);
-            
-            // Step 5: IF NEEDS_CLARIFIER -> ASK_CLARIFIER -> SAVE_CONTEXT -> END
+            // Check if clarification is needed (before fetching data to avoid unnecessary API calls)
             if (state.needsClarifier()) {
+                log.info("Clarification needed - asking clarifier before fetching data - correlationId: {}", correlationId);
                 state = clarificationService.askClarifier(state, requestContext);
                 // Ensure response is created before returning
                 if (state.getResponse() == null) {
@@ -100,6 +95,12 @@ public class OrchestratorService {
                 }
                 return state.getResponse();
             }
+            
+            // Step 3: RESOLVE_TIME_RANGE
+            state = timeRangeResolutionService.resolveTimeRange(state, requestContext);
+            
+            // Step 4: FETCH
+            state = fetchService.fetchData(state, requestContext);
             
             
             // Step 5: NORMALIZE
