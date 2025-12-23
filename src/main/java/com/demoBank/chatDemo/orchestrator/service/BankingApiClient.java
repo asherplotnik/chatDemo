@@ -31,7 +31,7 @@ public class BankingApiClient {
     private final ObjectMapper objectMapper;
     private RestClient restClient;
     
-    @Value("${banking.api.base-url:http://localhost:8081/api}")
+    @Value("${banking.api.base-url:http://localhost:8080}")
     private String baseUrl;
     
     @Value("${banking.api.timeout:30000}")

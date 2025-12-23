@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+
 /**
  * Orchestrator service - workflow owner and coordinator.
  * 
@@ -41,6 +42,7 @@ public class OrchestratorService {
     private final ClarificationService clarificationService;
     private final IntentService intentService;
     private final TimeRangeResolutionService timeRangeResolutionService;
+    private final FetchService fetchService;
     
     /**
      * Main orchestration method - processes a chat request through the complete workflow.
@@ -85,8 +87,8 @@ public class OrchestratorService {
             // Step 3: RESOLVE_TIME_RANGE
             state = timeRangeResolutionService.resolveTimeRange(state, requestContext);
             
-            // Step 4: PLAN
-            state = plan(state, requestContext);
+            // Step 4: FETCH
+            state = fetchService.fetchData(state, requestContext);
             
             // Step 5: IF NEEDS_CLARIFIER -> ASK_CLARIFIER -> SAVE_CONTEXT -> END
             if (state.needsClarifier()) {
@@ -99,22 +101,20 @@ public class OrchestratorService {
                 return state.getResponse();
             }
             
-            // Step 6: FETCH
-            state = fetch(state, requestContext);
             
-            // Step 7: NORMALIZE
+            // Step 5: NORMALIZE
             state = normalize(state, requestContext);
             
-            // Step 8: COMPUTE
+            // Step 6: COMPUTE
             state = compute(state, requestContext);
             
-            // Step 9: DRAFT
+            // Step 7: DRAFT
             state = draft(state, requestContext);
             
-            // Step 10: SAVE_CONTEXT
+            // Step 8: SAVE_CONTEXT
             saveContext(state, requestContext);
             
-            // Step 11: RESPOND
+            // Step 9: RESPOND
             return respond(state, requestContext);
             
         } catch (Exception e) {
@@ -123,55 +123,10 @@ public class OrchestratorService {
         }
     }
     
-    /**
-     * Step 4: PLAN - Choose which read-only APIs to call.
-     * 
-     * @param state Current orchestration state
-     * @param requestContext Request context
-     * @return Updated orchestration state with execution plan
-     */
-    private OrchestrationState plan(OrchestrationState state, RequestContext requestContext) {
-        String correlationId = requestContext.getCorrelationId();
-        String customerId = state.getCustomerId();
-        
-        log.debug("Step PLAN - correlationId: {}, customerId: {}", correlationId, maskCustomerId(customerId));
-        
-        // TODO: Implement planning logic
-        // - Map intent to API endpoints
-        // - Determine which APIs to call based on domain/metric
-        // - Create execution plan with customerId included
-        // - Store plan in state
-        // - IMPORTANT: Plan must include customerId from state.getCustomerId() (trusted source)
-        // - NEVER use customerId from messageText - only from RequestContext
-        return state;
-    }
+    
     
     /**
-     * Step 6: FETCH - Call read-only APIs to fetch data.
-     * 
-     * @param state Current orchestration state
-     * @param requestContext Request context
-     * @return Updated orchestration state with fetched data
-     */
-    private OrchestrationState fetch(OrchestrationState state, RequestContext requestContext) {
-        String correlationId = requestContext.getCorrelationId();
-        String customerId = state.getCustomerId(); // Get from state (validated in RECEIVE)
-        
-        log.debug("Step FETCH - correlationId: {}, customerId: {}", correlationId, maskCustomerId(customerId));
-        
-        // TODO: Implement data fetching logic
-        // - Execute API calls based on plan
-        // - Use customerId from state.getCustomerId() (trusted source from HTTP header)
-        // - NEVER use customerId from messageText - only from RequestContext
-        // - Handle API errors and retries
-        // - Store raw API responses in state
-        // - Pass customerId in API request headers/parameters
-        
-        return state;
-    }
-    
-    /**
-     * Step 7: NORMALIZE - Convert API responses to canonical internal models.
+     * Step 5: NORMALIZE - Convert API responses to canonical internal models.
      * 
      * @param state Current orchestration state
      * @param requestContext Request context
@@ -187,7 +142,7 @@ public class OrchestratorService {
     }
     
     /**
-     * Step 8: COMPUTE - Perform deterministic calculations.
+     * Step 6: COMPUTE - Perform deterministic calculations.
      * 
      * @param state Current orchestration state
      * @param requestContext Request context
@@ -203,7 +158,7 @@ public class OrchestratorService {
     }
     
     /**
-     * Step 9: DRAFT - Generate answer text and explanation.
+     * Step 7: DRAFT - Generate answer text and explanation.
      * 
      * @param state Current orchestration state
      * @param requestContext Request context
@@ -220,7 +175,7 @@ public class OrchestratorService {
     }
 
     /**
-     * Step 10: SAVE_CONTEXT - Save conversation context to session.
+     * Step 8: SAVE_CONTEXT - Save conversation context to session.
      *
      * @param state Current orchestration state
      * @param requestContext Request context
@@ -236,7 +191,7 @@ public class OrchestratorService {
     }
     
     /**
-     * Step 11: RESPOND - Return final response to user.
+     * Step 9: RESPOND - Return final response to user.
      * 
      * @param state Current orchestration state
      * @param requestContext Request context
