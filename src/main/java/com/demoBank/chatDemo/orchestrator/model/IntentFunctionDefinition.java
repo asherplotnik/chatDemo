@@ -45,16 +45,16 @@ public class IntentFunctionDefinition {
                                     "accountIds", Map.of(
                                         "type", List.of("array", "null"),
                                         "items", Map.of("type", "string"),
-                                        "description", "List of account references (e.g., masked account numbers like '****1234')"
+                                        "description", "List of account references ONLY if explicitly mentioned by the user in the current message (e.g., masked account numbers like '****1234'). Do NOT infer or invent account IDs. Set to null if no account is mentioned."
                                     ),
                                     "cardIds", Map.of(
                                         "type", List.of("array", "null"),
                                         "items", Map.of("type", "string"),
-                                        "description", "List of card references (e.g., masked card numbers)"
+                                        "description", "List of card references ONLY if explicitly mentioned by the user in the current message (e.g., masked card numbers). Do NOT infer or invent card IDs. Set to null if no card is mentioned."
                                     ),
                                     "otherEntities", Map.of(
                                         "type", List.of("object", "null"),
-                                        "description", "Other entity references (loan IDs, deposit IDs, etc.)",
+                                        "description", "Other entity references ONLY if explicitly mentioned by the user in the current message (loan IDs, deposit IDs, etc.). Do NOT infer or invent entity IDs. Set to null if no other entities are mentioned.",
                                         "additionalProperties", Map.of("type", "array", "items", Map.of("type", "string"))
                                     )
                                 )

@@ -161,8 +161,10 @@ public class FetchService {
         String domain = intent.getDomain();
         IntentExtractionResponse.EntityHints entityHints = intent.getEntityHints();
         
-        // Extract entity hints
+        // Extract entity hints and filter out masked account IDs
+        // Masked IDs (like "****1234") cannot be used for API filtering
         List<String> accountIds = entityHints != null ? entityHints.getAccountIds() : null;
+        accountIds = filterOutMaskedAccountIds(accountIds, correlationId);
         List<String> cardIds = entityHints != null ? entityHints.getCardIds() : null;
         
         // Determine if transactions should be included based on metric
@@ -267,6 +269,40 @@ public class FetchService {
         }
         
         return null;
+    }
+    
+    /**
+     * Filters out masked account IDs from the list.
+     * Masked account IDs (containing "****") cannot be used for API filtering
+     * because the API expects real account IDs.
+     * 
+     * @param accountIds List of account IDs (may contain masked IDs)
+     * @param correlationId Correlation ID for logging
+     * @return Filtered list with only real account IDs, or null if all were masked
+     */
+    private List<String> filterOutMaskedAccountIds(List<String> accountIds, String correlationId) {
+        if (accountIds == null || accountIds.isEmpty()) {
+            return null;
+        }
+        
+        List<String> realAccountIds = accountIds.stream()
+                .filter(id -> id != null && !id.contains("****"))
+                .toList();
+        
+        if (realAccountIds.isEmpty()) {
+            log.info("All account IDs are masked - correlationId: {}, maskedIds: {}. " +
+                    "Will fetch all accounts without filtering.", correlationId, accountIds);
+            return null; // Return null to fetch all accounts
+        }
+        
+        if (realAccountIds.size() < accountIds.size()) {
+            log.info("Filtered out masked account IDs - correlationId: {}, " +
+                    "originalCount: {}, filteredCount: {}, maskedIds: {}",
+                    correlationId, accountIds.size(), realAccountIds.size(),
+                    accountIds.stream().filter(id -> id != null && id.contains("****")).toList());
+        }
+        
+        return realAccountIds;
     }
     
     /**

@@ -79,6 +79,16 @@ public class IntentExtractionPrompt {
             - Time range hints: relative expressions like "last week", "yesterday", "this month"
             - Entity hints: account references, card references, etc.
             
+            IMPORTANT - Entity Hints Extraction Rules:
+            - ONLY extract account IDs, card IDs, or other entity references if the user EXPLICITLY mentions them in the current message
+            - Do NOT infer or invent entity IDs that are not mentioned by the user
+            - Do NOT use account IDs from previous conversations unless explicitly mentioned in the current message
+            - If no entity references are mentioned, set entityHints to null
+            - Examples:
+              * User says "show balance for account ****1234" -> extract accountIds: ["****1234"]
+              * User says "show my balance" -> set entityHints to null (no account mentioned)
+              * User says "show transactions" -> set entityHints to null (no account mentioned)
+            
             IMPORTANT - UNKNOWN Domain Classification:
             Use domain "UNKNOWN" for messages that are conversational and do not require banking data access:
             - Greetings: "hi", "hello", "good morning", "hey"
