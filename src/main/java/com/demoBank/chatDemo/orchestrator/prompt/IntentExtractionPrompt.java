@@ -20,13 +20,14 @@ public class IntentExtractionPrompt {
     public static class ClarificationDefaults {
         
         /**
-         * Default time range: last week (7 days ago to today).
+         * Default time range: start of current month to today.
+         * Example: If today is 2025-12-13, returns "2025-12-01 to 2025-12-13".
          */
         public static String getDefaultTimeRange() {
             LocalDate today = LocalDate.now();
-            LocalDate lastWeekStart = today.minusWeeks(1);
+            LocalDate monthStart = today.withDayOfMonth(1);
             return String.format("%s to %s", 
-                lastWeekStart.format(DateTimeFormatter.ISO_LOCAL_DATE),
+                monthStart.format(DateTimeFormatter.ISO_LOCAL_DATE),
                 today.format(DateTimeFormatter.ISO_LOCAL_DATE));
         }
         
@@ -177,7 +178,7 @@ public class IntentExtractionPrompt {
         
         return switch (clarificationContext.toLowerCase()) {
             case "time_range" -> String.format(
-                "Time range default: %s (last week from today)", 
+                "Time range default: %s (start of current month to today)", 
                 ClarificationDefaults.getDefaultTimeRange()
             );
             case "account_selection" -> String.format(

@@ -58,7 +58,7 @@ public class TimeRangeResolver {
      */
     public static ResolvedTimeRange resolveDeterministically(String timeRangeHint, String timezone) {
         if (timeRangeHint == null || timeRangeHint.isBlank()) {
-            // No hint provided - use default (last week)
+            // No hint provided - use default (start of current month to today)
             return getDefaultTimeRange();
         }
         
@@ -265,13 +265,14 @@ public class TimeRangeResolver {
     }
     
     /**
-     * Gets default time range (last week).
+     * Gets default time range (start of current month to today).
+     * Example: If today is 2025-12-13, returns 2025-12-01 to 2025-12-13.
      */
     public static ResolvedTimeRange getDefaultTimeRange() {
         LocalDate today = LocalDate.now();
-        LocalDate lastWeekStart = today.minusWeeks(1);
+        LocalDate monthStart = today.withDayOfMonth(1);
         return new ResolvedTimeRange(
-            formatDate(lastWeekStart), 
+            formatDate(monthStart), 
             formatDate(today), 
             false
         );
