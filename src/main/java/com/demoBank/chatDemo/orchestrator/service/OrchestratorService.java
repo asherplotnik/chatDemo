@@ -192,17 +192,36 @@ public class OrchestratorService {
             return state.getResponse();
         }
         
-        // TODO: Implement response creation logic
-        // - Get drafted response from state
-        // - Translate to Hebrew if needed (outbound translation)
-        // - Apply compliance masking
-        // - Create ChatResponse
+        // Temporary: Return normalized data as JSON until drafting is implemented
+        String answer;
+        String explanation;
         
-        // Temporary: Return placeholder response until drafting is implemented
+        List<com.demoBank.chatDemo.orchestrator.model.NormalizedData> normalizedData = state.getNormalizedData();
+        if (normalizedData != null && !normalizedData.isEmpty()) {
+            try {
+                // Convert normalized data to JSON
+                String jsonData = objectMapper.writerWithDefaultPrettyPrinter()
+                        .writeValueAsString(normalizedData);
+                answer = jsonData;
+                explanation = "Normalized data returned as JSON (temporary - will be refined later)";
+                log.info("Returning normalized data as JSON - correlationId: {}, dataCount: {}", 
+                        requestContext.getCorrelationId(), normalizedData.size());
+            } catch (Exception e) {
+                log.error("Error serializing normalized data to JSON - correlationId: {}", 
+                        requestContext.getCorrelationId(), e);
+                answer = "Error serializing normalized data: " + e.getMessage();
+                explanation = "Failed to convert normalized data to JSON";
+            }
+        } else {
+            answer = "No normalized data available";
+            explanation = "Normalization step did not produce any data";
+            log.warn("No normalized data found in state - correlationId: {}", requestContext.getCorrelationId());
+        }
+        
         ChatResponse response = ChatResponse.builder()
-                .answer(state.getDraftedAnswer() != null ? state.getDraftedAnswer() : "Processing your request...")
+                .answer(answer)
                 .correlationId(requestContext.getCorrelationId())
-                .explanation(state.getDraftedExplanation() != null ? state.getDraftedExplanation() : "Orchestration in progress")
+                .explanation(explanation)
                 .build();
         
         state.setResponse(response);
