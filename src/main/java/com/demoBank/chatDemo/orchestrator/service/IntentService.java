@@ -251,6 +251,51 @@ public class IntentService {
     }
     
     /**
+     * Checks if all extracted intents have domain "UNKNOWN" and handles them if so.
+     * If all intents are UNKNOWN, handles them with conversational response and returns true.
+     * Otherwise returns false.
+     * 
+     * @param state Current orchestration state
+     * @param requestContext Request context
+     * @return true if all intents are UNKNOWN and were handled, false otherwise
+     */
+    public boolean checkAndHandleUnknownIntents(OrchestrationState state, RequestContext requestContext) {
+        String correlationId = requestContext.getCorrelationId();
+        
+        // Check if all intents are UNKNOWN (conversational, non-banking messages)
+        if (isAllIntentsUnknown(state)) {
+            log.info("All intents are UNKNOWN - taking conversational response path - correlationId: {}", correlationId);
+            // Handle UNKNOWN intent with conversational response (skip data-fetching steps)
+            state = handleUnknownIntent(state, requestContext);
+            // Ensure response is created before returning
+            if (state.getResponse() == null) {
+                log.warn("handleUnknownIntent did not create response - correlationId: {}, creating fallback response", correlationId);
+                state.setResponse(createUnknownIntentFallbackResponse(correlationId));
+            }
+            return true;
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Checks if all extracted intents have domain "UNKNOWN".
+     * 
+     * @param state Orchestration state
+     * @return true if all intents are UNKNOWN, false otherwise
+     */
+    private boolean isAllIntentsUnknown(OrchestrationState state) {
+        List<IntentExtractionResponse.IntentData> intents = state.getExtractedIntent();
+        if (intents == null || intents.isEmpty()) {
+            return false;
+        }
+        
+        // Check if all intents have domain "UNKNOWN"
+        return intents.stream()
+                .allMatch(intent -> intent != null && "UNKNOWN".equals(intent.getDomain()));
+    }
+    
+    /**
      * Handles UNKNOWN intents (conversational, non-banking messages).
      * Generates appropriate conversational responses using LLM.
      * 

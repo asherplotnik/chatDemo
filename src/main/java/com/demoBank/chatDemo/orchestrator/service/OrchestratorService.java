@@ -73,29 +73,15 @@ public class OrchestratorService {
             // Always extract intent (with clarification context if clarification was applied)
             state = intentService.extractIntent(state, requestContext);
             
-            // Check if all intents are UNKNOWN (conversational, non-banking messages)
-            if (isAllIntentsUnknown(state)) {
-                log.info("All intents are UNKNOWN - taking conversational response path - correlationId: {}", correlationId);
-                // Handle UNKNOWN intent with conversational response (skip data-fetching steps)
-                state = intentService.handleUnknownIntent(state, requestContext);
-                // Ensure response is created before returning
-                if (state.getResponse() == null) {
-                    log.warn("handleUnknownIntent did not create response - correlationId: {}, creating fallback response", correlationId);
-                    state.setResponse(intentService.createUnknownIntentFallbackResponse(requestContext.getCorrelationId()));
-                }
+            // Check if all intents are UNKNOWN and handle them if so
+            if (intentService.checkAndHandleUnknownIntents(state, requestContext)) {
                 return state.getResponse();
             }
             
-            // Check if clarification is needed (before fetching data to avoid unnecessary API calls)
-            if (state.needsClarifier()) {
-                log.info("Clarification needed - asking clarifier before fetching data - correlationId: {}", correlationId);
-                state = clarificationService.askClarifier(state, requestContext);
-                // Ensure response is created before returning
-                if (state.getResponse() == null) {
-                    log.warn("askClarifier did not create response - correlationId: {}, creating fallback response", correlationId);
-                    state.setResponse(clarificationService.createClarificationFallbackResponse(requestContext.getCorrelationId(), state.getClarificationNeeded()));
-                }
-                return state.getResponse();
+            // Check if clarification is needed and handle it if so
+            ChatResponse clarificationResponse = clarificationService.checkAndHandleClarification(state, requestContext);
+            if (clarificationResponse != null) {
+                return clarificationResponse;
             }
             
             // Step 3: RESOLVE_TIME_RANGE
@@ -230,23 +216,6 @@ public class OrchestratorService {
         
         state.setResponse(response);
         return response;
-    }
-    
-    /**
-     * Checks if all extracted intents have domain "UNKNOWN".
-     * 
-     * @param state Orchestration state
-     * @return true if all intents are UNKNOWN, false otherwise
-     */
-    private boolean isAllIntentsUnknown(OrchestrationState state) {
-        List<IntentExtractionResponse.IntentData> intents = state.getExtractedIntent();
-        if (intents == null || intents.isEmpty()) {
-            return false;
-        }
-        
-        // Check if all intents have domain "UNKNOWN"
-        return intents.stream()
-                .allMatch(intent -> intent != null && "UNKNOWN".equals(intent.getDomain()));
     }
     
     /**

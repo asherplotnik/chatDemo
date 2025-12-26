@@ -144,6 +144,32 @@ public class ClarificationService {
     }
     
     /**
+     * Checks if clarification is needed and handles it if so.
+     * If clarification is needed, asks the clarifier and ensures response is created.
+     * 
+     * @param state Current orchestration state
+     * @param requestContext Request context
+     * @return ChatResponse if clarification was needed and handled, null otherwise
+     */
+    public ChatResponse checkAndHandleClarification(OrchestrationState state, RequestContext requestContext) {
+        String correlationId = requestContext.getCorrelationId();
+        
+        // Check if clarification is needed (before fetching data to avoid unnecessary API calls)
+        if (state.needsClarifier()) {
+            log.info("Clarification needed - asking clarifier before fetching data - correlationId: {}", correlationId);
+            state = askClarifier(state, requestContext);
+            // Ensure response is created before returning
+            if (state.getResponse() == null) {
+                log.warn("askClarifier did not create response - correlationId: {}, creating fallback response", correlationId);
+                state.setResponse(createClarificationFallbackResponse(correlationId, state.getClarificationNeeded()));
+            }
+            return state.getResponse();
+        }
+        
+        return null;
+    }
+    
+    /**
      * Creates a fallback clarification response if askClarifier fails to create one.
      * 
      * @param correlationId Correlation ID
