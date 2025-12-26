@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.util.List;
 
 /**
  * Chat session context - maintains conversation state per customer.
@@ -82,6 +83,13 @@ public class ChatSessionContext {
      * Will be filled by the Orchestrator.
      */
     private SessionDefaults defaults;
+    
+    /**
+     * Conversation history summaries - stores summaries of previous Q&A pairs.
+     * Limited to last N messages to control prompt size.
+     * Will be filled by the Orchestrator after responses.
+     */
+    private List<ConversationSummary> conversationSummaries;
     
     /**
      * Timestamp when session was created.
@@ -229,5 +237,30 @@ public class ChatSessionContext {
          * Context about what we're clarifying (e.g., "time_range", "account_selection")
          */
         private String clarificationContext;
+    }
+    
+    /**
+     * Conversation summary model - stores summary of a Q&A pair.
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class ConversationSummary {
+        /**
+         * User's question/message
+         */
+        private String userMessage;
+        
+        /**
+         * Summary of the response provided.
+         * Format: "domain=<domain>, timeRange=<fromDate> to <toDate>, entities=[<nicknames>], transactions=<included|excluded>"
+         */
+        private String responseSummary;
+        
+        /**
+         * When this summary was created
+         */
+        private Instant createdAt;
     }
 }

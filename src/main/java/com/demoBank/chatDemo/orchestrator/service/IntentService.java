@@ -1,6 +1,7 @@
 package com.demoBank.chatDemo.orchestrator.service;
 
 import com.demoBank.chatDemo.gateway.dto.ChatResponse;
+import com.demoBank.chatDemo.gateway.model.ChatSessionContext;
 import com.demoBank.chatDemo.gateway.model.RequestContext;
 import com.demoBank.chatDemo.orchestrator.dto.IntentExtractionResponse;
 import com.demoBank.chatDemo.orchestrator.model.IntentFunctionDefinition;
@@ -157,12 +158,15 @@ public class IntentService {
      * Gets the appropriate system prompt for intent extraction.
      * If clarification context exists, uses prompt with clarification and defaults.
      * Otherwise, uses base prompt.
+     * Includes conversation summaries if available.
      * 
      * @param state Orchestration state
      * @param correlationId Correlation ID for logging
      * @return System prompt string
      */
     private String getSystemPromptForIntentExtraction(OrchestrationState state, String correlationId) {
+        String basePrompt;
+        
         // Check if we're processing a clarification answer
         if (state.getClarificationAnswer() != null && state.getClarificationContext() != null) {
             log.info("Extracting intent with clarification context - correlationId: {}, context: {}, answer: {}", 
@@ -176,7 +180,7 @@ public class IntentService {
             }
             
             // Use prompt with clarification context and default fallbacks
-            String systemPrompt = IntentExtractionPrompt.getSystemPromptWithClarification(
+            basePrompt = IntentExtractionPrompt.getSystemPromptWithClarification(
                 state.getClarificationContext(),
                 state.getClarificationAnswer(),
                 state.getExpectedAnswerType(),
@@ -191,12 +195,59 @@ public class IntentService {
             state.setClarificationContext(null);
             state.setExpectedAnswerType(null);
             state.setAwaitingClarification(false);
-            
-            return systemPrompt;
         } else {
             // Normal intent extraction without clarification
-            return IntentExtractionPrompt.getBaseSystemPrompt();
+            basePrompt = IntentExtractionPrompt.getBaseSystemPrompt();
         }
+        
+        // Add conversation summaries if available
+        String conversationContext = formatConversationSummaries(state, correlationId);
+        if (conversationContext != null && !conversationContext.isBlank()) {
+            return basePrompt + "\n\n" + conversationContext;
+        }
+        
+        return basePrompt;
+    }
+    
+    /**
+     * Formats conversation summaries for inclusion in LLM prompts.
+     * 
+     * @param state Orchestration state with session context
+     * @param correlationId Correlation ID for logging
+     * @return Formatted conversation context string or null if no summaries available
+     */
+    private String formatConversationSummaries(OrchestrationState state, String correlationId) {
+        if (state.getSessionContext() == null) {
+            return null;
+        }
+        
+        List<ChatSessionContext.ConversationSummary> summaries = 
+            state.getSessionContext().getConversationSummaries();
+        
+        if (summaries == null || summaries.isEmpty()) {
+            return null;
+        }
+        
+        StringBuilder context = new StringBuilder();
+        context.append("PREVIOUS CONVERSATION CONTEXT:\n");
+        context.append("The following is a summary of previous questions and responses in this conversation.\n");
+        context.append("Use this context to understand what the customer has already seen.\n\n");
+        
+        int index = 1;
+        for (ChatSessionContext.ConversationSummary summary : summaries) {
+            context.append("[Message #").append(index).append("]\n");
+            context.append("User: \"").append(summary.getUserMessage()).append("\"\n");
+            context.append("Response: ").append(summary.getResponseSummary()).append("\n\n");
+            index++;
+        }
+        
+        context.append("IMPORTANT: Use this context to avoid redundant requests and to understand follow-up questions.\n");
+        context.append("For example, if the user asks 'show me more details', refer to the most recent response summary.");
+        
+        log.debug("Formatted conversation summaries for prompt - correlationId: {}, summaryCount: {}", 
+                correlationId, summaries.size());
+        
+        return context.toString();
     }
     
     /**

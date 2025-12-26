@@ -81,7 +81,7 @@ public class TimeRangeResolutionService {
         if (resolved.needsLLM()) {
             // Complex expression - use LLM
             log.info("Time range hint requires LLM resolution - correlationId: {}, hint: {}", correlationId, timeRangeHint);
-            resolved = resolveTimeRangeWithLLM(timeRangeHint, timezone, correlationId);
+            resolved = resolveTimeRangeWithLLM(timeRangeHint, timezone, correlationId, state);
         }
         
         // Create TimeRange object and store in state
@@ -105,13 +105,21 @@ public class TimeRangeResolutionService {
      * @param timeRangeHint Time range hint to resolve
      * @param timezone Timezone string or null
      * @param correlationId Correlation ID for logging
+     * @param state Orchestration state (for conversation summaries)
      * @return ResolvedTimeRange with absolute dates
      */
     private TimeRangeResolver.ResolvedTimeRange resolveTimeRangeWithLLM(
-            String timeRangeHint, String timezone, String correlationId) {
+            String timeRangeHint, String timezone, String correlationId, OrchestrationState state) {
         
         try {
             String systemPrompt = TimeRangeResolutionPrompt.getSystemPrompt(timezone);
+            
+            // Add conversation summaries if available
+            String conversationContext = formatConversationSummaries(state, correlationId);
+            if (conversationContext != null && !conversationContext.isBlank()) {
+                systemPrompt = systemPrompt + "\n\n" + conversationContext;
+            }
+            
             String userMessage = "Resolve this time expression: " + timeRangeHint;
             
             // Create function definition for time range resolution
@@ -197,6 +205,46 @@ public class TimeRangeResolutionService {
                     correlationId, e.getMessage(), e);
             throw new IllegalStateException("Failed to parse time range resolution response: " + e.getMessage(), e);
         }
+    }
+    
+    /**
+     * Formats conversation summaries for inclusion in LLM prompts.
+     * 
+     * @param state Orchestration state with session context
+     * @param correlationId Correlation ID for logging
+     * @return Formatted conversation context string or null if no summaries available
+     */
+    private String formatConversationSummaries(OrchestrationState state, String correlationId) {
+        if (state == null || state.getSessionContext() == null) {
+            return null;
+        }
+        
+        List<ChatSessionContext.ConversationSummary> summaries = 
+            state.getSessionContext().getConversationSummaries();
+        
+        if (summaries == null || summaries.isEmpty()) {
+            return null;
+        }
+        
+        StringBuilder context = new StringBuilder();
+        context.append("PREVIOUS CONVERSATION CONTEXT:\n");
+        context.append("The following is a summary of previous questions and responses in this conversation.\n");
+        context.append("Use this context to understand what the customer has already seen.\n\n");
+        
+        int index = 1;
+        for (ChatSessionContext.ConversationSummary summary : summaries) {
+            context.append("[Message #").append(index).append("]\n");
+            context.append("User: \"").append(summary.getUserMessage()).append("\"\n");
+            context.append("Response: ").append(summary.getResponseSummary()).append("\n\n");
+            index++;
+        }
+        
+        context.append("IMPORTANT: Use this context to avoid redundant requests and to understand follow-up questions.");
+        
+        log.debug("Formatted conversation summaries for time range prompt - correlationId: {}, summaryCount: {}", 
+                correlationId, summaries.size());
+        
+        return context.toString();
     }
     
     /**
