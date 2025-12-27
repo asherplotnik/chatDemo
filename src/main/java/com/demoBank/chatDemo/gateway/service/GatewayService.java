@@ -47,6 +47,7 @@ public class GatewayService {
     private final GuardService guardService;
     private final InboundTranslator inboundTranslator;
     private final OrchestratorService orchestratorService;
+    private final OutboundTranslationService outboundTranslationService;
     
     /**
      * Processes a chat request through the gateway.
@@ -90,8 +91,12 @@ public class GatewayService {
                 hasActiveContext(session));
         
         // Forward to Orchestrator for processing
-        var x =  orchestratorService.orchestrate(context);
-        return x;
+        ChatResponse response = orchestratorService.orchestrate(context);
+        
+        // Translate response back to Hebrew if original message was Hebrew
+        ChatResponse chatResponse = outboundTranslationService.translateResponseToHebrew(response, session, correlationId);
+        chatResponse.setLanguage(context.getSessionContext().getLanguageCode());
+        return chatResponse;
     }
 
     private String translateToEnglishIfHebrewDetected(String messageText, LanguageDetectionResult languageResult, ChatSessionContext session, String correlationId) {

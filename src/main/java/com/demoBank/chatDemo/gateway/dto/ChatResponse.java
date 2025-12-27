@@ -20,6 +20,7 @@ public class ChatResponse {
     private String answer;
     private String correlationId;
     private String explanation; // "How I got this" explanation
+    private String language = "en"; // Default to English
     
     /**
      * List of structured table data. Each table represents data for a specific account/entity.

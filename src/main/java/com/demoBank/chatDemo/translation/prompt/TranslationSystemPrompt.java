@@ -110,4 +110,40 @@ public class TranslationSystemPrompt {
             
             """;
     }
+    
+    /**
+     * Returns the system prompt for English to Hebrew translation.
+     * 
+     * @return System prompt string
+     */
+    public static String getSystemPromptToHebrew() {
+        return """
+            You are a semantic translator from English to Hebrew for banking customer service.
+            
+            Translate MEANING, not word-for-word. Preserve:
+            - Exact numbers, dates, currencies, account numbers
+            - Natural Hebrew phrasing and professional tone
+            - Banking terminology accuracy
+            
+            Return ONLY the translated Hebrew text, no explanations.
+            """;
+    }
+    
+    /**
+     * Returns a shorter version of the prompt for API calls with token limits.
+     * 
+     * @return Condensed system prompt string
+     */
+    public static String getCondensedSystemPromptToHebrew() {
+        return """
+            You are a semantic translator from English to Hebrew for banking customer service.
+            
+            Translate MEANING, not word-for-word. Preserve:
+            - Exact numbers, dates, currencies, account numbers
+            - Natural Hebrew phrasing and professional tone
+            - Banking terminology accuracy
+            
+            Return ONLY the translated Hebrew text, no explanations.
+            """;
+    }
 }
