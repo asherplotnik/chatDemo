@@ -1,5 +1,6 @@
 package com.demoBank.chatDemo.orchestrator.service;
 
+import com.demoBank.chatDemo.bankApi.*;
 import com.demoBank.chatDemo.gateway.model.ChatSessionContext;
 import com.demoBank.chatDemo.gateway.model.RequestContext;
 import com.demoBank.chatDemo.orchestrator.dto.IntentExtractionResponse;
@@ -8,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -29,8 +31,14 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class FetchService {
     
-    private final BankingApiClient bankingApiClient;
-    
+    private final CurrentAccountsService currentAccountsService;
+    private final CreditCardsService creditCardsService;
+    private final DepositsService depositsService;
+    private final ForeignCurrentAccountsService foreignCurrentAccountsService;
+    private final LoansService loansService;
+    private final MortgageService mortgageService;
+    private final SecuritiesService securitiesService;
+
     /**
      * Fetches data from banking APIs based on extracted intents.
      * 
@@ -156,7 +164,7 @@ public class FetchService {
             String customerId,
             String fromDate,
             String toDate,
-            String correlationId) {
+            String correlationId) throws IOException {
         
         String domain = intent.getDomain();
         IntentExtractionResponse.EntityHints entityHints = intent.getEntityHints();
@@ -172,40 +180,39 @@ public class FetchService {
         
         // Call appropriate API based on domain
         return switch (domain) {
-            case "current-accounts" -> bankingApiClient.getCurrentAccountsTransactions(
-                    customerId, fromDate, toDate, accountIds, includeTransactions, correlationId);
+            case "current-accounts" -> currentAccountsService.getCurrentAccountsData(
+                    customerId, fromDate, toDate, accountIds, includeTransactions);
             
-            case "foreign-current-accounts" -> bankingApiClient.getForeignCurrentAccountsTransactions(
-                    customerId, fromDate, toDate, accountIds, correlationId);
+            case "foreign-current-accounts" -> foreignCurrentAccountsService.getForeignCurrentAccountsData(
+                    customerId, fromDate, toDate, accountIds, includeTransactions);
             
             case "credit-cards" -> {
                 // For credit cards, use cardIds as last4Digits (nickname)
                 String last4Digits = (cardIds != null && !cardIds.isEmpty()) ? cardIds.get(0) : null;
-                yield bankingApiClient.getCreditCards(
-                        customerId, fromDate, toDate, last4Digits, correlationId);
+                yield creditCardsService.getCreditCardsData(
+                        customerId, fromDate, toDate, last4Digits, includeTransactions);
             }
             
             case "loans" -> {
                 // Extract nickname from parameters if available
                 String nickname = extractNickname(intent);
-                yield bankingApiClient.getLoans(
-                        customerId, fromDate, toDate, includeTransactions, nickname, correlationId);
+                yield loansService.getLoansData(
+                        customerId, fromDate, toDate, nickname, includeTransactions );
             }
             
             case "mortgages" -> {
                 String nickname = extractNickname(intent);
-                yield bankingApiClient.getMortgages(
-                        customerId, fromDate, toDate, includeTransactions, nickname, correlationId);
+                yield mortgageService.getMortgageData(
+                        customerId, fromDate, toDate, nickname, includeTransactions);
             }
             
             case "deposits" -> {
                 String nickname = extractNickname(intent);
-                yield bankingApiClient.getDeposits(
-                        customerId, fromDate, toDate, includeTransactions, nickname, correlationId);
+                yield depositsService.getDepositsData(
+                        customerId, fromDate, toDate, nickname, includeTransactions);
             }
             
-            case "securities" -> bankingApiClient.getSecurities(
-                    customerId, fromDate, toDate, includeTransactions, correlationId);
+            case "securities" -> securitiesService.getSecuritiesData(customerId, includeTransactions);
             
             default -> {
                 log.warn("Unknown domain - correlationId: {}, domain: {}", correlationId, domain);
