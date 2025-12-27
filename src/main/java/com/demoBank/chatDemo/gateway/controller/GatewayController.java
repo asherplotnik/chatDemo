@@ -8,6 +8,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Gateway REST controller - thin HTTP layer for chat requests.
  * 
@@ -47,6 +50,25 @@ public class GatewayController {
             @RequestHeader(value = CUSTOMER_ID_HEADER, required = false) String customerIdHeader) {
         
         ChatResponse response = gatewayService.processChatRequest(request, customerIdHeader);
+        return ResponseEntity.ok(response);
+    }
+    
+    /**
+     * Logout endpoint - removes session context from memory for the customer.
+     * POC: Simple logout that removes session based on X-Customer-ID header.
+     * 
+     * @param customerIdHeader Customer ID from HTTP header (trusted)
+     * @return Success response
+     */
+    @PostMapping("/logout")
+    public ResponseEntity<Map<String, String>> logout(
+            @RequestHeader(value = CUSTOMER_ID_HEADER, required = false) String customerIdHeader) {
+        
+        gatewayService.logout(customerIdHeader);
+        
+        Map<String, String> response = new HashMap<>();
+        response.put("status", "success");
+        response.put("message", "Logged out successfully");
         return ResponseEntity.ok(response);
     }
 }

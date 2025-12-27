@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.UUID;
 
 /**
  * Gateway service - handles all business logic for the gateway.
@@ -97,6 +98,25 @@ public class GatewayService {
         ChatResponse chatResponse = outboundTranslationService.translateResponseToHebrew(response, session, correlationId);
         chatResponse.setLanguage(context.getSessionContext().getLanguageCode());
         return chatResponse;
+    }
+    
+    /**
+     * Logout - removes session context from memory for the customer.
+     * POC: Simple logout that removes session based on X-Customer-ID header.
+     * 
+     * @param customerIdHeader Customer ID from HTTP header (trusted)
+     */
+    public void logout(String customerIdHeader) {
+        String customerId = extractAndValidateCustomerId(customerIdHeader);
+        String correlationId = UUID.randomUUID().toString();
+        
+        log.info("Logout request - correlationId: {}, customerId: {}", 
+                correlationId, CustomerIdMasker.mask(customerId));
+        
+        sessionService.invalidateSession(customerId);
+        
+        log.info("Session invalidated - correlationId: {}, customerId: {}", 
+                correlationId, CustomerIdMasker.mask(customerId));
     }
 
     private String translateToEnglishIfHebrewDetected(String messageText, LanguageDetectionResult languageResult, ChatSessionContext session, String correlationId) {
