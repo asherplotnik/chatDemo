@@ -214,4 +214,65 @@ public class GroqApiClient {
     public GroqApiResponse translate(String systemPrompt, String hebrewText) {
         return callGroqApi(systemPrompt, hebrewText);
     }
+    
+    /**
+     * Calls Groq API with a pre-built request (supports conversation history).
+     * This allows full control over the messages array including conversation history.
+     * 
+     * @param request Pre-built GroqApiRequest with messages, tools, etc.
+     * @return GroqApiResponse with the result
+     * @throws RuntimeException if API call fails
+     */
+    public GroqApiResponse callGroqApiWithToolsAndHistory(GroqApiRequest request) {
+        if (apiKey == null || apiKey.isBlank()) {
+            throw new IllegalStateException("Groq API key is not configured. Set groq.api.key in application.yaml");
+        }
+        
+        // Ensure model is set
+        if (request.getModel() == null || request.getModel().isBlank()) {
+            request.setModel(defaultModel);
+        }
+        
+        // Set defaults if not provided
+        if (request.getTemperature() == null) {
+            request.setTemperature(temperature);
+        }
+        if (request.getMaxCompletionTokens() == null) {
+            request.setMaxCompletionTokens(maxCompletionTokens);
+        }
+        if (request.getTopP() == null) {
+            request.setTopP(1.0);
+        }
+        if (request.getStream() == null) {
+            request.setStream(false);
+        }
+        
+        try {
+            log.debug("Calling Groq API with custom request - model: {}, messageCount: {}, tools: {}", 
+                    request.getModel(), 
+                    request.getMessages() != null ? request.getMessages().size() : 0,
+                    request.getTools() != null ? request.getTools().size() : 0);
+            
+            GroqApiResponse response = restClient.post()
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
+                    .body(request)
+                    .retrieve()
+                    .body(GroqApiResponse.class);
+            
+            if (response == null) {
+                throw new RuntimeException("Groq API returned null response");
+            }
+            
+            log.debug("Groq API response received - model: {}, tokens used: {}, hasToolCalls: {}", 
+                    response.getModel(), 
+                    response.getUsage() != null ? response.getUsage().getTotalTokens() : "unknown",
+                    response.hasToolCalls());
+            
+            return response;
+            
+        } catch (Exception e) {
+            log.error("Error calling Groq API with custom request", e);
+            throw new RuntimeException("Failed to call Groq API: " + e.getMessage(), e);
+        }
+    }
 }

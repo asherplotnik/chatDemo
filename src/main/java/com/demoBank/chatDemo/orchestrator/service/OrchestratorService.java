@@ -45,6 +45,7 @@ public class OrchestratorService {
     private final FetchService fetchService;
     private final NormalizationService normalizationService;
     private final ConversationSummaryService conversationSummaryService;
+    private final DraftResponseService draftResponseService;
     
     /**
      * Main orchestration method - processes a chat request through the complete workflow.
@@ -94,14 +95,11 @@ public class OrchestratorService {
             // Step 5: NORMALIZE
             state = normalizationService.normalize(state, requestContext);
             
-            // Step 5.5: CREATE_CONVERSATION_SUMMARY - Create summary of this Q&A for future context
-            conversationSummaryService.createConversationSummary(state, requestContext);
-            
-            // Step 6: COMPUTE
-            state = compute(state, requestContext);
-            
             // Step 7: DRAFT
-            state = draft(state, requestContext);
+            state = draftResponseService.draftResponse(state, requestContext);
+            
+            // Step 7.5: CREATE_CONVERSATION_SUMMARY - Create summary from drafted response for future context
+            conversationSummaryService.createConversationSummary(state, requestContext);
             
             // Step 8: SAVE_CONTEXT
             saveContext(state, requestContext);
@@ -115,41 +113,6 @@ public class OrchestratorService {
         }
     }
     
-    
-    
-    
-    /**
-     * Step 6: COMPUTE - Perform deterministic calculations.
-     * 
-     * @param state Current orchestration state
-     * @param requestContext Request context
-     * @return Updated orchestration state with computed results
-     */
-    private OrchestrationState compute(OrchestrationState state, RequestContext requestContext) {
-        log.debug("Step COMPUTE - correlationId: {}", requestContext.getCorrelationId());
-        // TODO: Implement computation logic
-        // - Perform calculations (sum, average, max, min, count, etc.)
-        // - Use deterministic code only (no LLM math)
-        // - Store computed results in state
-        return state;
-    }
-    
-    /**
-     * Step 7: DRAFT - Generate answer text and explanation.
-     * 
-     * @param state Current orchestration state
-     * @param requestContext Request context
-     * @return Updated orchestration state with drafted response
-     */
-    private OrchestrationState draft(OrchestrationState state, RequestContext requestContext) {
-        log.debug("Step DRAFT - correlationId: {}", requestContext.getCorrelationId());
-        // TODO: Implement drafting logic
-        // - Generate concise answer (2-4 lines)
-        // - Include "How I got this" explanation
-        // - Format amounts, dates, descriptions
-        // - Store drafted response in state
-        return state;
-    }
 
     /**
      * Step 8: SAVE_CONTEXT - Save conversation context to session.
