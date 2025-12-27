@@ -370,8 +370,10 @@ public class DraftResponseService {
         message.append("9. The frontend CANNOT display data without the tables field - it is ESSENTIAL\n");
         message.append("\n");
         message.append("Table structure (one per account):\n");
-        message.append("- For transactions: accountName='Account Name', type='transactions', headers=['Date', 'Amount', 'Description', 'Merchant']\n");
-        message.append("- For balances: accountName='Account Name', type='balance', headers=['Balance', 'Currency', 'Available']\n");
+        message.append("- For transactions: accountName='Account Name (Balance)', type='transactions', headers=['Date', 'Amount', 'Description', 'Merchant']\n");
+        message.append("- For balances: accountName='Account Name (Balance)', type='balance', headers=['Balance', 'Currency', 'Available']\n");
+        message.append("- CRITICAL: Always include balance in accountName if balance data exists: 'Account Name (₪1,234.56)'\n");
+        message.append("- Format balance with currency: ₪ for ILS, $ for USD, € for EUR\n");
         message.append("- Each row must be a complete object with all header keys\n");
         message.append("- Include metadata with rowCount\n");
         message.append("- Group transactions/balances by account - each account gets its own table\n");
@@ -493,9 +495,12 @@ public class DraftResponseService {
             for (NormalizedData data : normalizedData) {
                 if (data.getEntities() != null) {
                     for (com.demoBank.chatDemo.orchestrator.model.NormalizedEntity entity : data.getEntities()) {
-                        String accountName = entity.getNickname() != null 
+                        String baseAccountName = entity.getNickname() != null 
                                 ? entity.getNickname() 
                                 : entity.getEntityId();
+                        
+                        // Format account name with balance if available
+                        String accountNameWithBalance = formatAccountNameWithBalance(baseAccountName, entity.getBalance());
                         
                         // Create transactions table if entity has transactions
                         if (entity.getTransactions() != null && !entity.getTransactions().isEmpty()) {
@@ -521,7 +526,7 @@ public class DraftResponseService {
                             }
                             
                             DraftResponseDTO.TableData table = DraftResponseDTO.TableData.builder()
-                                    .accountName(accountName)
+                                    .accountName(accountNameWithBalance)
                                     .type("transactions")
                                     .headers(headers)
                                     .rows(rows)
@@ -558,7 +563,7 @@ public class DraftResponseService {
                             rows.add(row);
                             
                             DraftResponseDTO.TableData table = DraftResponseDTO.TableData.builder()
-                                    .accountName(accountName)
+                                    .accountName(accountNameWithBalance)
                                     .type("balance")
                                     .headers(headers)
                                     .rows(rows)
@@ -592,6 +597,59 @@ public class DraftResponseService {
         } catch (Exception e) {
             log.error("Error creating fallback tables - correlationId: {}", correlationId, e);
             return draftResponse; // Return original if fallback fails
+        }
+    }
+    
+    /**
+     * Formats account name with balance information.
+     * 
+     * @param accountName Base account name/nickname
+     * @param balance Balance information (can be null)
+     * @return Account name with balance appended if available (e.g., "Main Account (₪1,234.56)")
+     */
+    private String formatAccountNameWithBalance(String accountName, com.demoBank.chatDemo.orchestrator.model.NormalizedBalance balance) {
+        if (balance == null) {
+            return accountName;
+        }
+        
+        String balanceStr = null;
+        String currency = balance.getCurrency() != null ? balance.getCurrency() : "ILS";
+        
+        // Prefer available balance, fallback to current balance
+        if (balance.getAvailable() != null) {
+            balanceStr = formatBalanceAmount(balance.getAvailable(), currency);
+        } else if (balance.getCurrent() != null) {
+            balanceStr = formatBalanceAmount(balance.getCurrent(), currency);
+        }
+        
+        if (balanceStr != null && !balanceStr.isBlank()) {
+            return accountName + " (" + balanceStr + ")";
+        }
+        
+        return accountName;
+    }
+    
+    /**
+     * Formats a balance amount with currency symbol.
+     * 
+     * @param amount Balance amount
+     * @param currency Currency code
+     * @return Formatted balance string (e.g., "₪1,234.56" or "USD 1,234.56")
+     */
+    private String formatBalanceAmount(Double amount, String currency) {
+        if (amount == null) {
+            return null;
+        }
+        
+        // Format with currency symbol
+        if ("ILS".equals(currency) || "NIS".equals(currency)) {
+            return "₪" + String.format("%.2f", amount);
+        } else if ("USD".equals(currency)) {
+            return "$" + String.format("%.2f", amount);
+        } else if ("EUR".equals(currency)) {
+            return "€" + String.format("%.2f", amount);
+        } else {
+            return currency + " " + String.format("%.2f", amount);
         }
     }
     

@@ -90,7 +90,8 @@ public class GatewayService {
                 hasActiveContext(session));
         
         // Forward to Orchestrator for processing
-        return orchestratorService.orchestrate(context);
+        var x =  orchestratorService.orchestrate(context);
+        return x;
     }
 
     private String translateToEnglishIfHebrewDetected(String messageText, LanguageDetectionResult languageResult, ChatSessionContext session, String correlationId) {
