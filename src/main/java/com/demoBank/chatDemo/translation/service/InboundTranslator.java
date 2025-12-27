@@ -31,7 +31,7 @@ public class InboundTranslator {
     @Value("${translation.use-groq-api:false}")
     private boolean useGroqApi;
     
-    @Value("${groq.api.translation.model:llama-3.3-70b-versatile}")
+    @Value("${groq.api.model:llama-3.3-70b-versatile}")
     private String translationModel;
     
     /**

@@ -46,7 +46,7 @@ public class GuardService {
     @Value("${guard.check-type:comprehensive}")
     private String checkType; // Options: "comprehensive", "prompt-injection", "malicious-intent"
     
-    @Value("${groq.api.guard.model:llama-3.3-70b-versatile}")
+    @Value("${groq.api.model:llama-3.3-70b-versatile}")
     private String guardModel;
     
     /**

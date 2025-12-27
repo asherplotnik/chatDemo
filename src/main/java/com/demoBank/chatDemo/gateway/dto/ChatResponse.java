@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 /**
  * Response DTO for chat messages.
  */
@@ -20,8 +22,10 @@ public class ChatResponse {
     private String explanation; // "How I got this" explanation
     
     /**
-     * Structured table data. Can be null if no table is needed.
+     * List of structured table data. Each table represents data for a specific account/entity.
+     * Can be null or empty if no tables are needed.
      * Frontend can check this field to identify and render tabular data.
+     * Each table should be rendered separately, typically one per account.
      */
-    private DraftResponseDTO.TableData table;
+    private List<DraftResponseDTO.TableData> tables;
 }

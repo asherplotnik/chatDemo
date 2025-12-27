@@ -3,12 +3,14 @@ package com.demoBank.chatDemo.orchestrator.service;
 import com.demoBank.chatDemo.gateway.dto.ChatResponse;
 import com.demoBank.chatDemo.gateway.model.ChatSessionContext;
 import com.demoBank.chatDemo.gateway.model.RequestContext;
+import com.demoBank.chatDemo.orchestrator.dto.DraftResponseDTO;
 import com.demoBank.chatDemo.orchestrator.model.OrchestrationState;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Service for creating and managing conversation summaries.
@@ -106,15 +108,27 @@ public class ConversationSummaryService {
                 summary.append("introduction=none");
             }
             
-            // Add table information
-            if (response.getTable() != null) {
-                summary.append(", tableType=").append(response.getTable().getType());
-                summary.append(", hasTable=true");
-                if (response.getTable().getRows() != null) {
-                    summary.append(", rowCount=").append(response.getTable().getRows().size());
+            // Add tables information
+            if (response.getTables() != null && !response.getTables().isEmpty()) {
+                summary.append(", tableCount=").append(response.getTables().size());
+                summary.append(", hasTables=true");
+                // Add account names
+                List<String> accountNames = new ArrayList<>();
+                int totalRows = 0;
+                for (DraftResponseDTO.TableData table : response.getTables()) {
+                    if (table.getAccountName() != null) {
+                        accountNames.add(table.getAccountName());
+                    }
+                    if (table.getRows() != null) {
+                        totalRows += table.getRows().size();
+                    }
                 }
+                if (!accountNames.isEmpty()) {
+                    summary.append(", accounts=[").append(String.join(",", accountNames)).append("]");
+                }
+                summary.append(", totalRows=").append(totalRows);
             } else {
-                summary.append(", hasTable=false");
+                summary.append(", hasTables=false");
             }
             
             // Add data source

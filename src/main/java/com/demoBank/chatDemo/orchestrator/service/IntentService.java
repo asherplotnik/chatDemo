@@ -36,7 +36,7 @@ public class IntentService {
     private final GroqApiClient groqApiClient;
     private final ObjectMapper objectMapper;
     
-    @Value("${groq.api.intent-extraction.model:llama-3.3-70b-versatile}")
+    @Value("${groq.api.model:llama-3.3-70b-versatile}")
     private String intentExtractionModel;
     
     /**

@@ -39,7 +39,7 @@ public class DraftResponseService {
     private final GroqApiClient groqApiClient;
     private final ObjectMapper objectMapper;
     
-    @Value("${groq.api.draft-response.model:llama-3.3-70b-versatile}")
+    @Value("${groq.api.model:llama-3.3-70b-versatile}")
     private String draftResponseModel;
     
     /**
@@ -106,22 +106,29 @@ public class DraftResponseService {
             DraftResponseDTO draftResponse = parseDraftResponse(groqResponse, correlationId);
             
             // Log parsed response details
-            log.info("Parsed draft response - correlationId: {}, hasTable: {}, tableType: {}, rowCount: {}", 
-                    correlationId,
-                    draftResponse.getTable() != null,
-                    draftResponse.getTable() != null ? draftResponse.getTable().getType() : "null",
-                    draftResponse.getTable() != null && draftResponse.getTable().getRows() != null 
-                            ? draftResponse.getTable().getRows().size() : 0);
+            int tableCount = draftResponse.getTables() != null ? draftResponse.getTables().size() : 0;
+            log.info("Parsed draft response - correlationId: {}, tableCount: {}", 
+                    correlationId, tableCount);
             
-            // Validate and ensure table exists if there's data
-            if (draftResponse.getTable() == null && hasDataToDisplay(normalizedData)) {
-                log.warn("WARNING: LLM did not include table but data exists - correlationId: {}, creating fallback table", 
-                        correlationId);
-                draftResponse = ensureTableExists(draftResponse, normalizedData, state, correlationId);
+            if (draftResponse.getTables() != null) {
+                for (int i = 0; i < draftResponse.getTables().size(); i++) {
+                    DraftResponseDTO.TableData table = draftResponse.getTables().get(i);
+                    log.info("Table {} - correlationId: {}, accountName: {}, type: {}, rowCount: {}", 
+                            i + 1, correlationId, table.getAccountName(), table.getType(),
+                            table.getRows() != null ? table.getRows().size() : 0);
+                }
             }
             
-            if (draftResponse.getTable() == null) {
-                log.warn("WARNING: Draft response has no table - correlationId: {}, introduction: {}", 
+            // Validate and ensure tables exist if there's data
+            if ((draftResponse.getTables() == null || draftResponse.getTables().isEmpty()) 
+                    && hasDataToDisplay(normalizedData)) {
+                log.warn("WARNING: LLM did not include tables but data exists - correlationId: {}, creating fallback tables", 
+                        correlationId);
+                draftResponse = ensureTablesExist(draftResponse, normalizedData, state, correlationId);
+            }
+            
+            if (draftResponse.getTables() == null || draftResponse.getTables().isEmpty()) {
+                log.warn("WARNING: Draft response has no tables - correlationId: {}, introduction: {}", 
                         correlationId, 
                         draftResponse.getIntroduction() != null && draftResponse.getIntroduction().length() > 50 
                                 ? draftResponse.getIntroduction().substring(0, 50) + "..." 
@@ -134,9 +141,9 @@ public class DraftResponseService {
             
             state.setResponse(chatResponse);
             
-            log.info("Response drafting completed - correlationId: {}, hasTable: {}, tokens: {}", 
+            log.info("Response drafting completed - correlationId: {}, tableCount: {}, tokens: {}", 
                     correlationId,
-                    chatResponse.getTable() != null,
+                    chatResponse.getTables() != null ? chatResponse.getTables().size() : 0,
                     groqResponse.getUsage() != null ? groqResponse.getUsage().getTotalTokens() : "unknown");
             
         } catch (Exception e) {
@@ -353,18 +360,21 @@ public class DraftResponseService {
         message.append("\n");
         message.append("CRITICAL REQUIREMENTS:\n");
         message.append("1. You MUST call the draft_structured_response function\n");
-        message.append("2. You MUST include a table field with structured data if ANY data exists\n");
-        message.append("3. If normalized data contains transactions: table MUST have type='transactions' with ALL transactions as rows\n");
-        message.append("4. If normalized data contains balances: table MUST have type='balance' with ALL balances as rows\n");
-        message.append("5. If user asks for both transactions AND balance: include BOTH in the table or create appropriate combined structure\n");
-        message.append("6. NEVER set table to null if there is data in the normalized data\n");
-        message.append("7. The frontend CANNOT display data without the table field - it is ESSENTIAL\n");
+        message.append("2. You MUST include a tables field (LIST) with structured data if ANY data exists\n");
+        message.append("3. Create SEPARATE tables for EACH account/entity - do NOT mix accounts in one table\n");
+        message.append("4. Each table MUST have accountName field set to the account nickname/name\n");
+        message.append("5. If normalized data contains transactions from multiple accounts: create ONE table per account with that account's transactions\n");
+        message.append("6. If normalized data contains balances from multiple accounts: create ONE table per account with that account's balance\n");
+        message.append("7. If user asks for both transactions AND balance: create separate tables per account\n");
+        message.append("8. NEVER set tables to null or empty if there is data in the normalized data\n");
+        message.append("9. The frontend CANNOT display data without the tables field - it is ESSENTIAL\n");
         message.append("\n");
-        message.append("Table structure:\n");
-        message.append("- For transactions: headers=['Date', 'Amount', 'Description', 'Merchant', 'Account'], include ALL transaction rows\n");
-        message.append("- For balances: headers=['Account', 'Balance', 'Currency'], include ALL account rows\n");
+        message.append("Table structure (one per account):\n");
+        message.append("- For transactions: accountName='Account Name', type='transactions', headers=['Date', 'Amount', 'Description', 'Merchant']\n");
+        message.append("- For balances: accountName='Account Name', type='balance', headers=['Balance', 'Currency', 'Available']\n");
         message.append("- Each row must be a complete object with all header keys\n");
         message.append("- Include metadata with rowCount\n");
+        message.append("- Group transactions/balances by account - each account gets its own table\n");
         
         return message.toString();
     }
@@ -427,7 +437,7 @@ public class DraftResponseService {
                 .answer(answer.toString())
                 .explanation(explanation)
                 .correlationId(correlationId)
-                .table(draftResponse.getTable()) // Set table field
+                .tables(draftResponse.getTables()) // Set tables field
                 .build();
     }
     
@@ -461,135 +471,126 @@ public class DraftResponseService {
     }
     
     /**
-     * Ensures a table exists in the draft response if data is available.
-     * Creates a basic table structure from normalized data.
+     * Ensures tables exist in the draft response if data is available.
+     * Creates separate tables for each account/entity from normalized data.
      * 
-     * @param draftResponse Draft response without table
+     * @param draftResponse Draft response without tables
      * @param normalizedData Normalized data
      * @param state Orchestration state
      * @param correlationId Correlation ID
-     * @return Draft response with table added
+     * @return Draft response with tables added (one per account)
      */
-    private DraftResponseDTO ensureTableExists(
+    private DraftResponseDTO ensureTablesExist(
             DraftResponseDTO draftResponse,
             List<NormalizedData> normalizedData,
             OrchestrationState state,
             String correlationId) {
         
         try {
-            // Determine what type of table to create based on data
-            boolean hasTransactions = false;
-            boolean hasBalances = false;
+            List<DraftResponseDTO.TableData> tables = new ArrayList<>();
             
+            // Group data by entity/account and create separate tables
             for (NormalizedData data : normalizedData) {
                 if (data.getEntities() != null) {
                     for (com.demoBank.chatDemo.orchestrator.model.NormalizedEntity entity : data.getEntities()) {
+                        String accountName = entity.getNickname() != null 
+                                ? entity.getNickname() 
+                                : entity.getEntityId();
+                        
+                        // Create transactions table if entity has transactions
                         if (entity.getTransactions() != null && !entity.getTransactions().isEmpty()) {
-                            hasTransactions = true;
+                            List<String> headers = List.of("Date", "Amount", "Description", "Merchant");
+                            List<Map<String, Object>> rows = new ArrayList<>();
+                            
+                            for (com.demoBank.chatDemo.orchestrator.model.NormalizedTransaction tx : entity.getTransactions()) {
+                                Map<String, Object> row = new HashMap<>();
+                                row.put("Date", tx.getDate() != null ? tx.getDate() : "");
+                                String amountStr = "";
+                                if (tx.getAmount() != null) {
+                                    amountStr = tx.getCurrency() != null 
+                                            ? tx.getCurrency() + " " + tx.getAmount().toString()
+                                            : tx.getAmount().toString();
+                                }
+                                row.put("Amount", amountStr);
+                                row.put("Description", tx.getDescription() != null ? tx.getDescription() : "");
+                                String merchant = tx.getMerchant() != null && tx.getMerchant().getName() != null
+                                        ? tx.getMerchant().getName()
+                                        : "";
+                                row.put("Merchant", merchant);
+                                rows.add(row);
+                            }
+                            
+                            DraftResponseDTO.TableData table = DraftResponseDTO.TableData.builder()
+                                    .accountName(accountName)
+                                    .type("transactions")
+                                    .headers(headers)
+                                    .rows(rows)
+                                    .metadata(DraftResponseDTO.TableMetadata.builder()
+                                            .rowCount(rows.size())
+                                            .hasTotals(false)
+                                            .build())
+                                    .build();
+                            
+                            tables.add(table);
                         }
+                        
+                        // Create balance table if entity has balance
                         if (entity.getBalance() != null) {
-                            hasBalances = true;
+                            List<String> headers = List.of("Balance", "Currency", "Available");
+                            List<Map<String, Object>> rows = new ArrayList<>();
+                            
+                            Map<String, Object> row = new HashMap<>();
+                            String balanceStr = "";
+                            if (entity.getBalance().getAvailable() != null) {
+                                balanceStr = entity.getBalance().getCurrency() != null
+                                        ? entity.getBalance().getCurrency() + " " + entity.getBalance().getAvailable().toString()
+                                        : entity.getBalance().getAvailable().toString();
+                            } else if (entity.getBalance().getCurrent() != null) {
+                                balanceStr = entity.getBalance().getCurrency() != null
+                                        ? entity.getBalance().getCurrency() + " " + entity.getBalance().getCurrent().toString()
+                                        : entity.getBalance().getCurrent().toString();
+                            }
+                            row.put("Balance", balanceStr);
+                            row.put("Currency", entity.getBalance().getCurrency() != null 
+                                    ? entity.getBalance().getCurrency() : "ILS");
+                            row.put("Available", entity.getBalance().getAvailable() != null 
+                                    ? entity.getBalance().getAvailable().toString() : "");
+                            rows.add(row);
+                            
+                            DraftResponseDTO.TableData table = DraftResponseDTO.TableData.builder()
+                                    .accountName(accountName)
+                                    .type("balance")
+                                    .headers(headers)
+                                    .rows(rows)
+                                    .metadata(DraftResponseDTO.TableMetadata.builder()
+                                            .rowCount(1)
+                                            .hasTotals(false)
+                                            .build())
+                                    .build();
+                            
+                            tables.add(table);
                         }
                     }
                 }
             }
             
-            DraftResponseDTO.TableData table;
-            
-            if (hasTransactions) {
-                // Create transactions table
-                List<String> headers = List.of("Date", "Amount", "Description", "Account");
-                List<Map<String, Object>> rows = new ArrayList<>();
-                
-                for (NormalizedData data : normalizedData) {
-                    if (data.getEntities() != null) {
-                        for (com.demoBank.chatDemo.orchestrator.model.NormalizedEntity entity : data.getEntities()) {
-                            if (entity.getTransactions() != null) {
-                                for (com.demoBank.chatDemo.orchestrator.model.NormalizedTransaction tx : entity.getTransactions()) {
-                                    Map<String, Object> row = new HashMap<>();
-                                    row.put("Date", tx.getDate() != null ? tx.getDate() : "");
-                                    String amountStr = "";
-                                    if (tx.getAmount() != null) {
-                                        amountStr = tx.getCurrency() != null 
-                                                ? tx.getCurrency() + " " + tx.getAmount().toString()
-                                                : tx.getAmount().toString();
-                                    }
-                                    row.put("Amount", amountStr);
-                                    row.put("Description", tx.getDescription() != null ? tx.getDescription() : "");
-                                    row.put("Account", entity.getNickname() != null ? entity.getNickname() : entity.getEntityId());
-                                    rows.add(row);
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                table = DraftResponseDTO.TableData.builder()
-                        .type("transactions")
-                        .headers(headers)
-                        .rows(rows)
-                        .metadata(DraftResponseDTO.TableMetadata.builder()
-                                .rowCount(rows.size())
-                                .hasTotals(false)
-                                .build())
-                        .build();
-                
-            } else if (hasBalances) {
-                // Create balance table
-                List<String> headers = List.of("Account", "Balance", "Currency");
-                List<Map<String, Object>> rows = new ArrayList<>();
-                
-                for (NormalizedData data : normalizedData) {
-                    if (data.getEntities() != null) {
-                        for (com.demoBank.chatDemo.orchestrator.model.NormalizedEntity entity : data.getEntities()) {
-                            if (entity.getBalance() != null) {
-                                Map<String, Object> row = new HashMap<>();
-                                row.put("Account", entity.getNickname() != null ? entity.getNickname() : entity.getEntityId());
-                                String balanceStr = "";
-                                if (entity.getBalance().getAvailable() != null) {
-                                    balanceStr = entity.getBalance().getCurrency() != null
-                                            ? entity.getBalance().getCurrency() + " " + entity.getBalance().getAvailable().toString()
-                                            : entity.getBalance().getAvailable().toString();
-                                } else if (entity.getBalance().getCurrent() != null) {
-                                    balanceStr = entity.getBalance().getCurrency() != null
-                                            ? entity.getBalance().getCurrency() + " " + entity.getBalance().getCurrent().toString()
-                                            : entity.getBalance().getCurrent().toString();
-                                }
-                                row.put("Balance", balanceStr);
-                                row.put("Currency", entity.getBalance().getCurrency() != null 
-                                        ? entity.getBalance().getCurrency() : "ILS");
-                                rows.add(row);
-                            }
-                        }
-                    }
-                }
-                
-                table = DraftResponseDTO.TableData.builder()
-                        .type("balance")
-                        .headers(headers)
-                        .rows(rows)
-                        .metadata(DraftResponseDTO.TableMetadata.builder()
-                                .rowCount(rows.size())
-                                .hasTotals(false)
-                                .build())
-                        .build();
-            } else {
-                // No data to create table from
+            if (tables.isEmpty()) {
+                // No data to create tables from
                 return draftResponse;
             }
             
-            log.info("Created fallback table - correlationId: {}, type: {}, rowCount: {}", 
-                    correlationId, table.getType(), table.getRows().size());
+            log.info("Created fallback tables - correlationId: {}, tableCount: {}", 
+                    correlationId, tables.size());
             
-            // Return new draft response with table
+            // Return new draft response with tables
             return DraftResponseDTO.builder()
                     .introduction(draftResponse.getIntroduction())
-                    .table(table)
+                    .tables(tables)
                     .dataSource(draftResponse.getDataSource())
                     .build();
             
         } catch (Exception e) {
-            log.error("Error creating fallback table - correlationId: {}", correlationId, e);
+            log.error("Error creating fallback tables - correlationId: {}", correlationId, e);
             return draftResponse; // Return original if fallback fails
         }
     }
@@ -631,7 +632,7 @@ public class DraftResponseService {
                 .answer("I encountered an error formatting your response. Please try again.")
                 .correlationId(correlationId)
                 .explanation("Drafting error: " + exception.getMessage())
-                .table(null)
+                .tables(null)
                 .build();
     }
 }

@@ -27,50 +27,57 @@ public class DraftResponseFunctionDefinition {
                     "type", "string",
                     "description", "A concise, natural language introduction (2-4 lines) that answers the customer's question. Include key numbers, amounts, dates, and descriptions."
                 ),
-                "table", Map.of(
-                    "type", List.of("object", "null"),
-                    "description", "Structured table data. Set to null if no table is needed. Always include a table when there is data to display (transactions, balances, lists, etc.).",
-                    "properties", Map.of(
-                        "type", Map.of(
-                            "type", "string",
-                            "description", "Type of table: 'transactions', 'balance', 'summary', 'list', or 'custom'",
-                            "enum", List.of("transactions", "balance", "summary", "list", "custom")
-                        ),
-                        "headers", Map.of(
-                            "type", "array",
-                            "description", "Array of column header names (e.g., ['Date', 'Amount', 'Description'])",
-                            "items", Map.of("type", "string")
-                        ),
-                        "rows", Map.of(
-                            "type", "array",
-                            "description", "Array of row objects. Each row is an object with keys matching header names.",
-                            "items", Map.of(
-                                "type", "object",
-                                "description", "A row object with keys matching header names",
-                                "additionalProperties", true
-                            )
-                        ),
-                        "metadata", Map.of(
-                            "type", "object",
-                            "description", "Optional metadata about the table",
-                            "properties", Map.of(
-                                "rowCount", Map.of(
-                                    "type", "integer",
-                                    "description", "Total number of rows in the table"
-                                ),
-                                "hasTotals", Map.of(
-                                    "type", "boolean",
-                                    "description", "Whether the table includes totals row"
-                                ),
-                                "totals", Map.of(
+                "tables", Map.of(
+                    "type", List.of("array", "null"),
+                    "description", "List of structured table data. Create SEPARATE tables for each account/entity to keep data organized. Always include tables when there is data to display. Set to null or empty array only if no data exists.",
+                    "items", Map.of(
+                        "type", "object",
+                        "properties", Map.of(
+                            "accountName", Map.of(
+                                "type", "string",
+                                "description", "Name/nickname of the account this table represents (e.g., 'Main Account', 'Savings Account')"
+                            ),
+                            "type", Map.of(
+                                "type", "string",
+                                "description", "Type of table: 'transactions', 'balance', 'summary', 'list', or 'custom'",
+                                "enum", List.of("transactions", "balance", "summary", "list", "custom")
+                            ),
+                            "headers", Map.of(
+                                "type", "array",
+                                "description", "Array of column header names (e.g., ['Date', 'Amount', 'Description'])",
+                                "items", Map.of("type", "string")
+                            ),
+                            "rows", Map.of(
+                                "type", "array",
+                                "description", "Array of row objects. Each row is an object with keys matching header names.",
+                                "items", Map.of(
                                     "type", "object",
-                                    "description", "Totals row data (if hasTotals is true)",
+                                    "description", "A row object with keys matching header names",
                                     "additionalProperties", true
                                 )
+                            ),
+                            "metadata", Map.of(
+                                "type", "object",
+                                "description", "Optional metadata about the table",
+                                "properties", Map.of(
+                                    "rowCount", Map.of(
+                                        "type", "integer",
+                                        "description", "Total number of rows in the table"
+                                    ),
+                                    "hasTotals", Map.of(
+                                        "type", "boolean",
+                                        "description", "Whether the table includes totals row"
+                                    ),
+                                    "totals", Map.of(
+                                        "type", "object",
+                                        "description", "Totals row data (if hasTotals is true)",
+                                        "additionalProperties", true
+                                    )
+                                )
                             )
-                        )
-                    ),
-                    "required", List.of("type", "headers", "rows")
+                        ),
+                        "required", List.of("type", "headers", "rows")
+                    )
                 ),
                 "dataSource", Map.of(
                     "type", "object",
@@ -104,7 +111,8 @@ public class DraftResponseFunctionDefinition {
     public static final String FUNCTION_NAME = "draft_structured_response";
     public static final String FUNCTION_DESCRIPTION = """
         Drafts a structured customer-facing response from normalized banking data.
-        Always includes an introduction, optional table (if data exists), and data source information.
-        The table structure allows the frontend to reliably identify and render tabular data.
+        Always includes an introduction, list of tables (one per account if data exists), and data source information.
+        Create SEPARATE tables for each account/entity to keep data organized.
+        The tables structure allows the frontend to reliably identify and render tabular data.
         """;
 }

@@ -35,8 +35,8 @@ public class TimeRangeResolutionService {
     private final GroqApiClient groqApiClient;
     private final ObjectMapper objectMapper;
     
-    @Value("${groq.api.intent-extraction.model:llama-3.3-70b-versatile}")
-    private String intentExtractionModel;
+    @Value("${groq.api.model:llama-3.3-70b-versatile}")
+    private String timeRangeResolutionModel;
     
     /**
      * Resolves absolute dates from relative time expressions.
@@ -141,7 +141,7 @@ public class TimeRangeResolutionService {
                     userMessage,
                     List.of(timeRangeTool),
                     "required", // Force the function call
-                    intentExtractionModel
+                    timeRangeResolutionModel
             );
             
             // Check if response contains tool calls

@@ -25,9 +25,11 @@ public class DraftResponseDTO {
     private String introduction;
     
     /**
-     * Structured table data. Can be null if no table is needed.
+     * List of structured table data. Each table represents data for a specific account/entity.
+     * Should create separate tables for each account to keep data organized.
+     * Can be null or empty if no tables are needed.
      */
-    private TableData table;
+    private List<TableData> tables;
     
     /**
      * Information about where the data came from.
@@ -42,6 +44,12 @@ public class DraftResponseDTO {
     @AllArgsConstructor
     @Builder
     public static class TableData {
+        /**
+         * Name/nickname of the account this table represents (e.g., 'Main Account', 'Savings Account').
+         * Used to identify which account the table belongs to.
+         */
+        private String accountName;
+        
         /**
          * Type of table: 'transactions', 'balance', 'summary', 'list', or 'custom'.
          */
