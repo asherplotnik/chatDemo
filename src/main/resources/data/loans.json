@@ -1,0 +1,424 @@
+[{
+  "_id": "87234199",
+  "customer": {
+    "customerId": "CUST-87234199",
+    "cifId": "CIF-118802771",
+    "customerType": "RETAIL",
+    "segment": "STANDARD",
+    "residencyCountry": "IL"
+  },
+  "data": {
+    "loans": [
+      {
+        "loan": {
+          "loanId": "LN-ILS-00044120",
+          "productType": "PERSONAL_LOAN",
+          "nickname": "Car Loan",
+          "currency": "ILS",
+          "status": "ACTIVE",
+          "openedDate": "2023-03-15",
+          "maturityDate": "2027-03-15",
+          "principalOriginal": 85000,
+          "interestRate": {
+            "rateType": "VARIABLE",
+            "annualRate": 0.067,
+            "indexName": "PRIME",
+            "spread": 0.012,
+            "resetFrequency": "MONTHLY",
+            "dayCountConvention": "ACT_365"
+          },
+          "repayment": {
+            "repaymentType": "AMORTIZING",
+            "paymentFrequency": "MONTHLY",
+            "paymentDayOfMonth": 15,
+            "nextPaymentDate": "2026-01-15",
+            "paymentAccount": {
+              "accountId": "ACC-001992310",
+              "maskedAccountNumber": "****2310",
+              "currency": "ILS"
+            }
+          },
+          "ownership": {
+            "borrowers": [
+              {
+                "customerId": "CUST-87234199",
+                "role": "PRIMARY"
+              }
+            ]
+          }
+        },
+        "balances": {
+          "asOf": "2025-12-18T19:06:38.000Z",
+          "principalOutstanding": 61240.55,
+          "accruedInterest": 221.19,
+          "totalOutstanding": 61461.74,
+          "nextInstallmentAmount": 1897.22,
+          "nextInstallmentBreakdown": {
+            "principal": 1550.8,
+            "interest": 346.42,
+            "fees": 0
+          }
+        },
+        "schedule": {
+          "remainingInstallments": 15,
+          "finalInstallmentDate": "2027-03-15"
+        },
+        "features": {
+          "earlyRepayment": {
+            "allowed": true,
+            "feeType": "PERCENT_OF_OUTSTANDING",
+            "feeRate": 0.01,
+            "notes": "Early repayment fee may depend on regulation and loan terms."
+          }
+        },
+        "transactionsSummary": {
+          "transactionCount": 3,
+          "totalDebits": 5691.66,
+          "totalCredits": 0,
+          "lastActivityDate": "2025-12-15"
+        },
+        "transactions": [
+          {
+            "transactionId": "LN-TRX-44120-01",
+            "type": "INSTALLMENT_PAYMENT",
+            "status": "BOOKED",
+            "amount": 1897.22,
+            "currency": "ILS",
+            "bookingDate": "2025-12-15",
+            "description": "MONTHLY INSTALLMENT"
+          },
+          {
+            "transactionId": "LN-TRX-44120-02",
+            "type": "INSTALLMENT_PAYMENT",
+            "status": "BOOKED",
+            "amount": 1897.22,
+            "currency": "ILS",
+            "bookingDate": "2025-11-15",
+            "description": "MONTHLY INSTALLMENT"
+          },
+          {
+            "transactionId": "LN-TRX-44120-03",
+            "type": "INSTALLMENT_PAYMENT",
+            "status": "BOOKED",
+            "amount": 1897.22,
+            "currency": "ILS",
+            "bookingDate": "2025-10-15",
+            "description": "MONTHLY INSTALLMENT"
+          }
+        ]
+      },
+      {
+        "loan": {
+          "loanId": "LN-USD-00011990",
+          "productType": "STUDENT_LOAN",
+          "nickname": "Study Abroad Loan",
+          "currency": "USD",
+          "status": "ACTIVE",
+          "openedDate": "2022-09-01",
+          "maturityDate": "2028-09-01",
+          "principalOriginal": 12000,
+          "interestRate": {
+            "rateType": "FIXED",
+            "annualRate": 0.054,
+            "indexName": null,
+            "spread": null,
+            "resetFrequency": null,
+            "dayCountConvention": "ACT_360"
+          },
+          "repayment": {
+            "repaymentType": "AMORTIZING",
+            "paymentFrequency": "MONTHLY",
+            "paymentDayOfMonth": 1,
+            "nextPaymentDate": "2026-01-01",
+            "paymentAccount": {
+              "accountId": "ACC-FX-009113330",
+              "maskedAccountNumber": "****3330",
+              "currency": "USD"
+            }
+          },
+          "ownership": {
+            "borrowers": [
+              {
+                "customerId": "CUST-87234199",
+                "role": "PRIMARY"
+              }
+            ]
+          }
+        },
+        "balances": {
+          "asOf": "2025-12-18T19:06:38.000Z",
+          "principalOutstanding": 8340,
+          "accruedInterest": 12.51,
+          "totalOutstanding": 8352.51,
+          "nextInstallmentAmount": 186.4,
+          "nextInstallmentBreakdown": {
+            "principal": 148.9,
+            "interest": 37.5,
+            "fees": 0
+          }
+        },
+        "schedule": {
+          "remainingInstallments": 33,
+          "finalInstallmentDate": "2028-09-01"
+        },
+        "features": {
+          "earlyRepayment": {
+            "allowed": true,
+            "feeType": "NONE",
+            "feeRate": 0,
+            "notes": "No early repayment fee for this product."
+          }
+        },
+        "transactionsSummary": {
+          "transactionCount": 2,
+          "totalDebits": 372.8,
+          "totalCredits": 0,
+          "lastActivityDate": "2025-12-01"
+        },
+        "transactions": [
+          {
+            "transactionId": "LN-TRX-11990-01",
+            "type": "INSTALLMENT_PAYMENT",
+            "status": "BOOKED",
+            "amount": 186.4,
+            "currency": "USD",
+            "bookingDate": "2025-12-01",
+            "description": "MONTHLY INSTALLMENT"
+          },
+          {
+            "transactionId": "LN-TRX-11990-02",
+            "type": "INSTALLMENT_PAYMENT",
+            "status": "BOOKED",
+            "amount": 186.4,
+            "currency": "USD",
+            "bookingDate": "2025-11-01",
+            "description": "MONTHLY INSTALLMENT"
+          }
+        ]
+      }
+    ]
+  },
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "currencyDecimals": {
+      "ILS": 2,
+      "USD": 2
+    },
+    "disclaimers": [
+      "Accrued interest is indicative and may change until posting.",
+      "Installment breakdown is estimated and may differ on posting date."
+    ]
+  }
+},
+{
+  "_id": "93478216",
+  "customer": {
+    "customerId": "CUST-93478216",
+    "cifId": "CIF-229441083",
+    "customerType": "RETAIL",
+    "segment": "STANDARD",
+    "residencyCountry": "IL"
+  },
+  "data": {
+    "loans": [
+      {
+        "loan": {
+          "loanId": "LN-ILS-00058241",
+          "productType": "PERSONAL_LOAN",
+          "nickname": "Car Loan",
+          "currency": "ILS",
+          "status": "ACTIVE",
+          "openedDate": "2023-06-20",
+          "maturityDate": "2027-06-20",
+          "principalOriginal": 92000,
+          "interestRate": {
+            "rateType": "VARIABLE",
+            "annualRate": 0.064,
+            "indexName": "PRIME",
+            "spread": 0.011,
+            "resetFrequency": "MONTHLY",
+            "dayCountConvention": "ACT_365"
+          },
+          "repayment": {
+            "repaymentType": "AMORTIZING",
+            "paymentFrequency": "MONTHLY",
+            "paymentDayOfMonth": 20,
+            "nextPaymentDate": "2026-01-20",
+            "paymentAccount": {
+              "accountId": "ACC-006318442",
+              "maskedAccountNumber": "****8442",
+              "currency": "ILS"
+            }
+          },
+          "ownership": {
+            "borrowers": [
+              {
+                "customerId": "CUST-93478216",
+                "role": "PRIMARY"
+              }
+            ]
+          }
+        },
+        "balances": {
+          "asOf": "2025-12-18T19:22:04.000Z",
+          "principalOutstanding": 67380.1,
+          "accruedInterest": 198.74,
+          "totalOutstanding": 67578.84,
+          "nextInstallmentAmount": 1968.55,
+          "nextInstallmentBreakdown": {
+            "principal": 1619.2,
+            "interest": 349.35,
+            "fees": 0
+          }
+        },
+        "schedule": {
+          "remainingInstallments": 18,
+          "finalInstallmentDate": "2027-06-20"
+        },
+        "features": {
+          "earlyRepayment": {
+            "allowed": true,
+            "feeType": "PERCENT_OF_OUTSTANDING",
+            "feeRate": 0.01,
+            "notes": "Early repayment fee may depend on regulation and loan terms."
+          }
+        },
+        "transactionsSummary": {
+          "transactionCount": 3,
+          "totalDebits": 5905.65,
+          "totalCredits": 0,
+          "lastActivityDate": "2025-12-20"
+        },
+        "transactions": [
+          {
+            "transactionId": "LN-TRX-58241-01",
+            "type": "INSTALLMENT_PAYMENT",
+            "status": "BOOKED",
+            "amount": 1968.55,
+            "currency": "ILS",
+            "bookingDate": "2025-12-20",
+            "description": "MONTHLY INSTALLMENT"
+          },
+          {
+            "transactionId": "LN-TRX-58241-02",
+            "type": "INSTALLMENT_PAYMENT",
+            "status": "BOOKED",
+            "amount": 1968.55,
+            "currency": "ILS",
+            "bookingDate": "2025-11-20",
+            "description": "MONTHLY INSTALLMENT"
+          },
+          {
+            "transactionId": "LN-TRX-58241-03",
+            "type": "INSTALLMENT_PAYMENT",
+            "status": "BOOKED",
+            "amount": 1968.55,
+            "currency": "ILS",
+            "bookingDate": "2025-10-20",
+            "description": "MONTHLY INSTALLMENT"
+          }
+        ]
+      },
+      {
+        "loan": {
+          "loanId": "LN-USD-00020814",
+          "productType": "STUDENT_LOAN",
+          "nickname": "Study Abroad Loan",
+          "currency": "USD",
+          "status": "ACTIVE",
+          "openedDate": "2022-11-10",
+          "maturityDate": "2028-11-10",
+          "principalOriginal": 14000,
+          "interestRate": {
+            "rateType": "FIXED",
+            "annualRate": 0.052,
+            "indexName": null,
+            "spread": null,
+            "resetFrequency": null,
+            "dayCountConvention": "ACT_360"
+          },
+          "repayment": {
+            "repaymentType": "AMORTIZING",
+            "paymentFrequency": "MONTHLY",
+            "paymentDayOfMonth": 1,
+            "nextPaymentDate": "2026-01-01",
+            "paymentAccount": {
+              "accountId": "ACC-FX-004228910",
+              "maskedAccountNumber": "****8910",
+              "currency": "USD"
+            }
+          },
+          "ownership": {
+            "borrowers": [
+              {
+                "customerId": "CUST-93478216",
+                "role": "PRIMARY"
+              }
+            ]
+          }
+        },
+        "balances": {
+          "asOf": "2025-12-18T19:22:04.000Z",
+          "principalOutstanding": 9925.5,
+          "accruedInterest": 13.04,
+          "totalOutstanding": 9938.54,
+          "nextInstallmentAmount": 201.85,
+          "nextInstallmentBreakdown": {
+            "principal": 160.3,
+            "interest": 41.55,
+            "fees": 0
+          }
+        },
+        "schedule": {
+          "remainingInstallments": 35,
+          "finalInstallmentDate": "2028-11-10"
+        },
+        "features": {
+          "earlyRepayment": {
+            "allowed": true,
+            "feeType": "NONE",
+            "feeRate": 0,
+            "notes": "No early repayment fee for this product."
+          }
+        },
+        "transactionsSummary": {
+          "transactionCount": 2,
+          "totalDebits": 403.7,
+          "totalCredits": 0,
+          "lastActivityDate": "2025-12-01"
+        },
+        "transactions": [
+          {
+            "transactionId": "LN-TRX-20814-01",
+            "type": "INSTALLMENT_PAYMENT",
+            "status": "BOOKED",
+            "amount": 201.85,
+            "currency": "USD",
+            "bookingDate": "2025-12-01",
+            "description": "MONTHLY INSTALLMENT"
+          },
+          {
+            "transactionId": "LN-TRX-20814-02",
+            "type": "INSTALLMENT_PAYMENT",
+            "status": "BOOKED",
+            "amount": 201.85,
+            "currency": "USD",
+            "bookingDate": "2025-11-01",
+            "description": "MONTHLY INSTALLMENT"
+          }
+        ]
+      }
+    ]
+  },
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "currencyDecimals": {
+      "ILS": 2,
+      "USD": 2
+    },
+    "disclaimers": [
+      "Accrued interest is indicative and may change until posting.",
+      "Installment breakdown is estimated and may differ on posting date."
+    ]
+  }
+}]

@@ -1,0 +1,386 @@
+[{
+  "_id": "87234199",
+  "customer": {
+    "customerId": "CUST-87234199",
+    "cifId": "CIF-118802771",
+    "customerType": "RETAIL",
+    "segment": "STANDARD",
+    "residencyCountry": "IL"
+  },
+  "data": {
+    "deposits": [
+      {
+        "deposit": {
+          "depositId": "DEP-ILS-00077121",
+          "productType": "TERM_DEPOSIT",
+          "nickname": "1Y Fixed - Kids Fund",
+          "currency": "ILS",
+          "status": "ACTIVE",
+          "openedDate": "2025-06-10",
+          "maturityDate": "2026-06-10",
+          "tenorDays": 365,
+          "principal": 50000,
+          "interestRate": {
+            "rateType": "FIXED",
+            "annualRate": 0.041,
+            "dayCountConvention": "ACT_365"
+          },
+          "payout": {
+            "interestPayoutFrequency": "AT_MATURITY",
+            "principalPayout": "AT_MATURITY",
+            "payoutAccount": {
+              "accountId": "ACC-001992310",
+              "maskedAccountNumber": "****2310",
+              "currency": "ILS"
+            }
+          },
+          "ownership": {
+            "owners": [
+              {
+                "customerId": "CUST-87234199",
+                "role": "PRIMARY"
+              }
+            ]
+          }
+        },
+        "balances": {
+          "asOf": "2025-12-18T18:55:08.000Z",
+          "principalOutstanding": 50000,
+          "accruedInterest": 1062.33,
+          "estimatedMaturityValue": 52050
+        },
+        "features": {
+          "autoRenewal": {
+            "enabled": true,
+            "renewalInstruction": "RENEW_PRINCIPAL_AND_INTEREST",
+            "renewalTenorDays": 365
+          },
+          "earlyWithdrawal": {
+            "allowed": true,
+            "penaltyType": "INTEREST_REDUCTION",
+            "penaltyDetails": "Early withdrawal reduces accrued interest by 50%."
+          }
+        },
+        "transactionsSummary": {
+          "transactionCount": 2,
+          "totalCredits": 50000,
+          "totalDebits": 0,
+          "lastActivityDate": "2025-06-10"
+        },
+        "transactions": [
+          {
+            "transactionId": "DEP-TRX-ILS-0001",
+            "type": "OPENING",
+            "status": "BOOKED",
+            "amount": 50000,
+            "currency": "ILS",
+            "bookingDate": "2025-06-10",
+            "description": "TERM DEPOSIT OPENING - FUNDING"
+          },
+          {
+            "transactionId": "DEP-TRX-ILS-0002",
+            "type": "INSTRUCTION",
+            "status": "BOOKED",
+            "amount": 0,
+            "currency": "ILS",
+            "bookingDate": "2025-06-10",
+            "description": "AUTO-RENEWAL ENABLED"
+          }
+        ]
+      },
+      {
+        "deposit": {
+          "depositId": "DEP-USD-00099110",
+          "productType": "SAVINGS_DEPOSIT",
+          "nickname": "USD High Yield",
+          "currency": "USD",
+          "status": "ACTIVE",
+          "openedDate": "2024-10-02",
+          "maturityDate": null,
+          "tenorDays": null,
+          "principal": 10000,
+          "interestRate": {
+            "rateType": "VARIABLE",
+            "annualRate": 0.028,
+            "dayCountConvention": "ACT_360"
+          },
+          "payout": {
+            "interestPayoutFrequency": "MONTHLY",
+            "principalPayout": "ON_DEMAND",
+            "payoutAccount": {
+              "accountId": "ACC-FX-009113330",
+              "maskedAccountNumber": "****3330",
+              "currency": "USD"
+            }
+          },
+          "ownership": {
+            "owners": [
+              {
+                "customerId": "CUST-87234199",
+                "role": "PRIMARY"
+              }
+            ]
+          }
+        },
+        "balances": {
+          "asOf": "2025-12-18T18:55:08.000Z",
+          "principalOutstanding": 10000,
+          "accruedInterest": 19.44,
+          "estimatedMaturityValue": null
+        },
+        "features": {
+          "autoRenewal": {
+            "enabled": false,
+            "renewalInstruction": null,
+            "renewalTenorDays": null
+          },
+          "earlyWithdrawal": {
+            "allowed": true,
+            "penaltyType": "NONE",
+            "penaltyDetails": "No penalty for on-demand withdrawals."
+          }
+        },
+        "transactionsSummary": {
+          "transactionCount": 3,
+          "totalCredits": 10000,
+          "totalDebits": 500,
+          "lastActivityDate": "2025-12-01"
+        },
+        "transactions": [
+          {
+            "transactionId": "DEP-TRX-USD-1001",
+            "type": "OPENING",
+            "status": "BOOKED",
+            "amount": 10000,
+            "currency": "USD",
+            "bookingDate": "2024-10-02",
+            "description": "SAVINGS DEPOSIT OPENING - FUNDING"
+          },
+          {
+            "transactionId": "DEP-TRX-USD-1002",
+            "type": "INTEREST_PAYOUT",
+            "status": "BOOKED",
+            "amount": 18.92,
+            "currency": "USD",
+            "bookingDate": "2025-12-01",
+            "description": "MONTHLY INTEREST"
+          },
+          {
+            "transactionId": "DEP-TRX-USD-1003",
+            "type": "WITHDRAWAL",
+            "status": "BOOKED",
+            "amount": 500,
+            "currency": "USD",
+            "bookingDate": "2025-11-20",
+            "description": "ON-DEMAND WITHDRAWAL"
+          }
+        ]
+      }
+    ]
+  },
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "currencyDecimals": {
+      "ILS": 2,
+      "USD": 2
+    },
+    "disclaimers": [
+      "Accrued interest is indicative and may change until payout/booking.",
+      "Estimated maturity value is provided only for term deposits.",
+      "Variable rates may change according to product rules."
+    ]
+  }
+},
+{
+  "_id": "93478216",
+  "customer": {
+    "customerId": "CUST-93478216",
+    "cifId": "CIF-229441083",
+    "customerType": "RETAIL",
+    "segment": "STANDARD",
+    "residencyCountry": "IL"
+  },
+  "data": {
+    "deposits": [
+      {
+        "deposit": {
+          "depositId": "DEP-ILS-00088452",
+          "productType": "TERM_DEPOSIT",
+          "nickname": "1Y Fixed - Education Fund",
+          "currency": "ILS",
+          "status": "ACTIVE",
+          "openedDate": "2025-07-03",
+          "maturityDate": "2026-07-03",
+          "tenorDays": 365,
+          "principal": 60000,
+          "interestRate": {
+            "rateType": "FIXED",
+            "annualRate": 0.039,
+            "dayCountConvention": "ACT_365"
+          },
+          "payout": {
+            "interestPayoutFrequency": "AT_MATURITY",
+            "principalPayout": "AT_MATURITY",
+            "payoutAccount": {
+              "accountId": "ACC-006318442",
+              "maskedAccountNumber": "****8442",
+              "currency": "ILS"
+            }
+          },
+          "ownership": {
+            "owners": [
+              {
+                "customerId": "CUST-93478216",
+                "role": "PRIMARY"
+              }
+            ]
+          }
+        },
+        "balances": {
+          "asOf": "2025-12-18T19:11:32.000Z",
+          "principalOutstanding": 60000,
+          "accruedInterest": 1029.18,
+          "estimatedMaturityValue": 62340
+        },
+        "features": {
+          "autoRenewal": {
+            "enabled": true,
+            "renewalInstruction": "RENEW_PRINCIPAL_AND_INTEREST",
+            "renewalTenorDays": 365
+          },
+          "earlyWithdrawal": {
+            "allowed": true,
+            "penaltyType": "INTEREST_REDUCTION",
+            "penaltyDetails": "Early withdrawal reduces accrued interest by 40%."
+          }
+        },
+        "transactionsSummary": {
+          "transactionCount": 2,
+          "totalCredits": 60000,
+          "totalDebits": 0,
+          "lastActivityDate": "2025-07-03"
+        },
+        "transactions": [
+          {
+            "transactionId": "DEP-TRX-ILS-0201",
+            "type": "OPENING",
+            "status": "BOOKED",
+            "amount": 60000,
+            "currency": "ILS",
+            "bookingDate": "2025-07-03",
+            "description": "TERM DEPOSIT OPENING - FUNDING"
+          },
+          {
+            "transactionId": "DEP-TRX-ILS-0202",
+            "type": "INSTRUCTION",
+            "status": "BOOKED",
+            "amount": 0,
+            "currency": "ILS",
+            "bookingDate": "2025-07-03",
+            "description": "AUTO-RENEWAL ENABLED"
+          }
+        ]
+      },
+      {
+        "deposit": {
+          "depositId": "DEP-USD-00110477",
+          "productType": "SAVINGS_DEPOSIT",
+          "nickname": "USD Savings Plus",
+          "currency": "USD",
+          "status": "ACTIVE",
+          "openedDate": "2024-11-18",
+          "maturityDate": null,
+          "tenorDays": null,
+          "principal": 12000,
+          "interestRate": {
+            "rateType": "VARIABLE",
+            "annualRate": 0.031,
+            "dayCountConvention": "ACT_360"
+          },
+          "payout": {
+            "interestPayoutFrequency": "MONTHLY",
+            "principalPayout": "ON_DEMAND",
+            "payoutAccount": {
+              "accountId": "ACC-FX-004228910",
+              "maskedAccountNumber": "****8910",
+              "currency": "USD"
+            }
+          },
+          "ownership": {
+            "owners": [
+              {
+                "customerId": "CUST-93478216",
+                "role": "PRIMARY"
+              }
+            ]
+          }
+        },
+        "balances": {
+          "asOf": "2025-12-18T19:11:32.000Z",
+          "principalOutstanding": 12000,
+          "accruedInterest": 23.08,
+          "estimatedMaturityValue": null
+        },
+        "features": {
+          "autoRenewal": {
+            "enabled": false,
+            "renewalInstruction": null,
+            "renewalTenorDays": null
+          },
+          "earlyWithdrawal": {
+            "allowed": true,
+            "penaltyType": "NONE",
+            "penaltyDetails": "No penalty for on-demand withdrawals."
+          }
+        },
+        "transactionsSummary": {
+          "transactionCount": 3,
+          "totalCredits": 12000,
+          "totalDebits": 800,
+          "lastActivityDate": "2025-12-01"
+        },
+        "transactions": [
+          {
+            "transactionId": "DEP-TRX-USD-2101",
+            "type": "OPENING",
+            "status": "BOOKED",
+            "amount": 12000,
+            "currency": "USD",
+            "bookingDate": "2024-11-18",
+            "description": "SAVINGS DEPOSIT OPENING - FUNDING"
+          },
+          {
+            "transactionId": "DEP-TRX-USD-2102",
+            "type": "INTEREST_PAYOUT",
+            "status": "BOOKED",
+            "amount": 22.41,
+            "currency": "USD",
+            "bookingDate": "2025-12-01",
+            "description": "MONTHLY INTEREST"
+          },
+          {
+            "transactionId": "DEP-TRX-USD-2103",
+            "type": "WITHDRAWAL",
+            "status": "BOOKED",
+            "amount": 800,
+            "currency": "USD",
+            "bookingDate": "2025-11-24",
+            "description": "ON-DEMAND WITHDRAWAL"
+          }
+        ]
+      }
+    ]
+  },
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "currencyDecimals": {
+      "ILS": 2,
+      "USD": 2
+    },
+    "disclaimers": [
+      "Accrued interest is indicative and may change until payout/booking.",
+      "Estimated maturity value is provided only for term deposits.",
+      "Variable rates may change according to product rules."
+    ]
+  }
+}]

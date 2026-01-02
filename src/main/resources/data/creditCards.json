@@ -1,0 +1,532 @@
+[{
+  "_id": "87234199",
+  "customer": {
+    "customerId": "CUST-87234199",
+    "cifId": "CIF-118802771",
+    "customerType": "RETAIL",
+    "segment": "STANDARD",
+    "residencyCountry": "IL"
+  },
+  "data": {
+    "cards": [
+      {
+        "card": {
+          "cardId": "CC-5512-PRIMARY",
+          "maskedPan": "**** **** **** 5512",
+          "brand": "VISA",
+          "product": "Platinum",
+          "status": "ACTIVE",
+          "cardType": "CREDIT",
+          "ownerRole": "PRIMARY",
+          "currency": "ILS",
+          "issuer": "Isracard",
+          "nickname": "Main Visa",
+          "billingCycle": {
+            "statementDayOfMonth": 10,
+            "paymentDueDaysAfterStatement": 20,
+            "nextStatementDate": "2026-01-10",
+            "nextPaymentDueDate": "2026-01-30"
+          }
+        },
+        "limits": {
+          "creditLimit": 25000,
+          "availableCredit": 14380.55,
+          "cashLimit": 3000,
+          "availableCash": 2480
+        },
+        "lastStatement": {
+          "statementId": "STMT-2025-12-10-5512",
+          "statementPeriod": {
+            "fromDate": "2025-11-11",
+            "toDate": "2025-12-10"
+          },
+          "generatedAt": "2025-12-10T02:10:00.000Z",
+          "currency": "ILS",
+          "openingBalance": 3210.45,
+          "closingBalance": 4689.12,
+          "minimumPayment": 234.46,
+          "paymentDueDate": "2025-12-30",
+          "lastPayment": {
+            "paidAt": "2025-12-15",
+            "amount": 500,
+            "method": "DIRECT_DEBIT",
+            "reference": "PAY-20251215-5512"
+          }
+        },
+        "currentBalance": {
+          "asOf": "2025-12-18T18:38:19.000Z",
+          "currency": "ILS",
+          "postedBalance": 5120.75,
+          "pendingAmount": 189.9,
+          "totalBalance": 5310.65
+        },
+        "transactionsSummary": {
+          "fromDate": "2025-12-01",
+          "toDate": "2025-12-18",
+          "transactionCount": 8,
+          "totalDebits": 1620.2,
+          "totalCredits": 500,
+          "largestDebit": {
+            "amount": 620,
+            "currency": "ILS",
+            "transactionId": "CC-TRX-77a1",
+            "bookingDate": "2025-12-12",
+            "description": "AIRLINE TICKET"
+          }
+        },
+        "transactions": [
+          {
+            "transactionId": "CC-TRX-77a1",
+            "status": "POSTED",
+            "type": "PURCHASE",
+            "amount": 620,
+            "currency": "ILS",
+            "transactionDate": "2025-12-11",
+            "postingDate": "2025-12-12",
+            "description": "AIRLINE TICKET",
+            "merchant": {
+              "name": "EL AL",
+              "mcc": "4511",
+              "location": {
+                "city": "Tel Aviv",
+                "country": "IL"
+              }
+            },
+            "installments": {
+              "isInstallment": true,
+              "planType": "EQUAL",
+              "totalInstallments": 3,
+              "currentInstallment": 1,
+              "installmentAmount": 206.67
+            },
+            "references": {
+              "authorizationCode": "AUTH-330112",
+              "rrn": "RRN-918271662",
+              "issuerReference": "ISR-5512-20251212-77a1"
+            }
+          },
+          {
+            "transactionId": "CC-TRX-10b2",
+            "status": "POSTED",
+            "type": "PAYMENT",
+            "amount": 500,
+            "currency": "ILS",
+            "transactionDate": "2025-12-15",
+            "postingDate": "2025-12-15",
+            "description": "PAYMENT - DIRECT DEBIT",
+            "merchant": null,
+            "installments": null,
+            "references": {
+              "issuerReference": "ISR-5512-20251215-10b2"
+            }
+          },
+          {
+            "transactionId": "CC-TRX-0f11",
+            "status": "PENDING",
+            "type": "PURCHASE",
+            "amount": 189.9,
+            "currency": "ILS",
+            "transactionDate": "2025-12-18",
+            "postingDate": null,
+            "description": "ELECTRONICS STORE",
+            "merchant": {
+              "name": "KSP",
+              "mcc": "5732",
+              "location": {
+                "city": "Rishon LeZion",
+                "country": "IL"
+              }
+            },
+            "installments": {
+              "isInstallment": false,
+              "planType": null,
+              "totalInstallments": null,
+              "currentInstallment": null,
+              "installmentAmount": null
+            },
+            "references": {
+              "authorizationCode": "AUTH-991201",
+              "rrn": "RRN-009118277"
+            }
+          }
+        ],
+        "pagination": {
+          "hasMore": false,
+          "nextCursor": null
+        }
+      },
+      {
+        "card": {
+          "cardId": "CC-8891-JOINT",
+          "maskedPan": "**** **** **** 8891",
+          "brand": "MASTERCARD",
+          "product": "Gold",
+          "status": "ACTIVE",
+          "cardType": "CREDIT",
+          "ownerRole": "JOINT",
+          "currency": "ILS",
+          "issuer": "Cal",
+          "nickname": "Home Mastercard",
+          "billingCycle": {
+            "statementDayOfMonth": 15,
+            "paymentDueDaysAfterStatement": 15,
+            "nextStatementDate": "2026-01-15",
+            "nextPaymentDueDate": "2026-01-30"
+          }
+        },
+        "limits": {
+          "creditLimit": 18000,
+          "availableCredit": 9600,
+          "cashLimit": 2000,
+          "availableCash": 1500
+        },
+        "lastStatement": {
+          "statementId": "STMT-2025-12-15-8891",
+          "statementPeriod": {
+            "fromDate": "2025-11-16",
+            "toDate": "2025-12-15"
+          },
+          "generatedAt": "2025-12-15T02:10:00.000Z",
+          "currency": "ILS",
+          "openingBalance": 1100,
+          "closingBalance": 2210.3,
+          "minimumPayment": 110.52,
+          "paymentDueDate": "2025-12-30",
+          "lastPayment": null
+        },
+        "currentBalance": {
+          "asOf": "2025-12-18T18:38:19.000Z",
+          "currency": "ILS",
+          "postedBalance": 2380.3,
+          "pendingAmount": 0,
+          "totalBalance": 2380.3
+        },
+        "transactionsSummary": {
+          "fromDate": "2025-12-01",
+          "toDate": "2025-12-18",
+          "transactionCount": 3,
+          "totalDebits": 170,
+          "totalCredits": 0,
+          "largestDebit": {
+            "amount": 90,
+            "currency": "ILS",
+            "transactionId": "CC-TRX-8891-01",
+            "bookingDate": "2025-12-07",
+            "description": "PHARMACY"
+          }
+        },
+        "transactions": [
+          {
+            "transactionId": "CC-TRX-8891-01",
+            "status": "POSTED",
+            "type": "PURCHASE",
+            "amount": 90,
+            "currency": "ILS",
+            "transactionDate": "2025-12-06",
+            "postingDate": "2025-12-07",
+            "description": "PHARMACY",
+            "merchant": {
+              "name": "SUPER-PHARM",
+              "mcc": "5912",
+              "location": {
+                "city": "Ramat Gan",
+                "country": "IL"
+              }
+            },
+            "installments": {
+              "isInstallment": false,
+              "planType": null,
+              "totalInstallments": null,
+              "currentInstallment": null,
+              "installmentAmount": null
+            },
+            "references": {
+              "authorizationCode": "AUTH-118201",
+              "rrn": "RRN-118201990"
+            }
+          }
+        ],
+        "pagination": {
+          "hasMore": false,
+          "nextCursor": null
+        }
+      }
+    ]
+  },
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "currencyDecimals": {
+      "ILS": 2
+    },
+    "disclaimers": [
+      "Pending card transactions may change before final posting.",
+      "Statement amounts are based on issuer statement generation rules and may be subject to adjustments."
+    ]
+  }
+},
+{
+  "_id": "93478216",
+  "customer": {
+    "customerId": "CUST-93478216",
+    "cifId": "CIF-229441083",
+    "customerType": "RETAIL",
+    "segment": "STANDARD",
+    "residencyCountry": "IL"
+  },
+  "data": {
+    "cards": [
+      {
+        "card": {
+          "cardId": "CC-7429-PRIMARY",
+          "maskedPan": "**** **** **** 7429",
+          "brand": "VISA",
+          "product": "Platinum",
+          "status": "ACTIVE",
+          "cardType": "CREDIT",
+          "ownerRole": "PRIMARY",
+          "currency": "ILS",
+          "issuer": "Isracard",
+          "nickname": "Daily Visa",
+          "billingCycle": {
+            "statementDayOfMonth": 12,
+            "paymentDueDaysAfterStatement": 20,
+            "nextStatementDate": "2026-01-12",
+            "nextPaymentDueDate": "2026-02-01"
+          }
+        },
+        "limits": {
+          "creditLimit": 28000,
+          "availableCredit": 16840.2,
+          "cashLimit": 3500,
+          "availableCash": 3100
+        },
+        "lastStatement": {
+          "statementId": "STMT-2025-12-12-7429",
+          "statementPeriod": {
+            "fromDate": "2025-11-13",
+            "toDate": "2025-12-12"
+          },
+          "generatedAt": "2025-12-12T02:05:00.000Z",
+          "currency": "ILS",
+          "openingBalance": 2890.1,
+          "closingBalance": 4159.85,
+          "minimumPayment": 207.99,
+          "paymentDueDate": "2026-01-01",
+          "lastPayment": {
+            "paidAt": "2025-12-16",
+            "amount": 600,
+            "method": "DIRECT_DEBIT",
+            "reference": "PAY-20251216-7429"
+          }
+        },
+        "currentBalance": {
+          "asOf": "2025-12-18T19:02:11.000Z",
+          "currency": "ILS",
+          "postedBalance": 4620.4,
+          "pendingAmount": 245.6,
+          "totalBalance": 4866
+        },
+        "transactionsSummary": {
+          "fromDate": "2025-12-01",
+          "toDate": "2025-12-18",
+          "transactionCount": 9,
+          "totalDebits": 1865.45,
+          "totalCredits": 600,
+          "largestDebit": {
+            "amount": 740,
+            "currency": "ILS",
+            "transactionId": "CC-TRX-a91c",
+            "bookingDate": "2025-12-14",
+            "description": "HOTEL RESERVATION"
+          }
+        },
+        "transactions": [
+          {
+            "transactionId": "CC-TRX-a91c",
+            "status": "POSTED",
+            "type": "PURCHASE",
+            "amount": 740,
+            "currency": "ILS",
+            "transactionDate": "2025-12-13",
+            "postingDate": "2025-12-14",
+            "description": "HOTEL RESERVATION",
+            "merchant": {
+              "name": "ISROTEL",
+              "mcc": "7011",
+              "location": {
+                "city": "Eilat",
+                "country": "IL"
+              }
+            },
+            "installments": {
+              "isInstallment": true,
+              "planType": "EQUAL",
+              "totalInstallments": 4,
+              "currentInstallment": 1,
+              "installmentAmount": 185
+            },
+            "references": {
+              "authorizationCode": "AUTH-552910",
+              "rrn": "RRN-551992771",
+              "issuerReference": "ISR-7429-20251214-a91c"
+            }
+          },
+          {
+            "transactionId": "CC-TRX-3d22",
+            "status": "POSTED",
+            "type": "PAYMENT",
+            "amount": 600,
+            "currency": "ILS",
+            "transactionDate": "2025-12-16",
+            "postingDate": "2025-12-16",
+            "description": "PAYMENT - DIRECT DEBIT",
+            "merchant": null,
+            "installments": null,
+            "references": {
+              "issuerReference": "ISR-7429-20251216-3d22"
+            }
+          },
+          {
+            "transactionId": "CC-TRX-b803",
+            "status": "PENDING",
+            "type": "PURCHASE",
+            "amount": 245.6,
+            "currency": "ILS",
+            "transactionDate": "2025-12-18",
+            "postingDate": null,
+            "description": "SPORTS EQUIPMENT",
+            "merchant": {
+              "name": "DECATHLON",
+              "mcc": "5941",
+              "location": {
+                "city": "Herzliya",
+                "country": "IL"
+              }
+            },
+            "installments": {
+              "isInstallment": false,
+              "planType": null,
+              "totalInstallments": null,
+              "currentInstallment": null,
+              "installmentAmount": null
+            },
+            "references": {
+              "authorizationCode": "AUTH-884120",
+              "rrn": "RRN-332190884"
+            }
+          }
+        ],
+        "pagination": {
+          "hasMore": false,
+          "nextCursor": null
+        }
+      },
+      {
+        "card": {
+          "cardId": "CC-3314-JOINT",
+          "maskedPan": "**** **** **** 3314",
+          "brand": "MASTERCARD",
+          "product": "Gold",
+          "status": "ACTIVE",
+          "cardType": "CREDIT",
+          "ownerRole": "JOINT",
+          "currency": "ILS",
+          "issuer": "Cal",
+          "nickname": "Family Mastercard",
+          "billingCycle": {
+            "statementDayOfMonth": 18,
+            "paymentDueDaysAfterStatement": 15,
+            "nextStatementDate": "2026-01-18",
+            "nextPaymentDueDate": "2026-02-02"
+          }
+        },
+        "limits": {
+          "creditLimit": 20000,
+          "availableCredit": 11250,
+          "cashLimit": 2500,
+          "availableCash": 2100
+        },
+        "lastStatement": {
+          "statementId": "STMT-2025-12-18-3314",
+          "statementPeriod": {
+            "fromDate": "2025-11-19",
+            "toDate": "2025-12-18"
+          },
+          "generatedAt": "2025-12-18T02:12:00.000Z",
+          "currency": "ILS",
+          "openingBalance": 980,
+          "closingBalance": 1935.4,
+          "minimumPayment": 96.77,
+          "paymentDueDate": "2026-02-02",
+          "lastPayment": null
+        },
+        "currentBalance": {
+          "asOf": "2025-12-18T19:02:11.000Z",
+          "currency": "ILS",
+          "postedBalance": 1935.4,
+          "pendingAmount": 0,
+          "totalBalance": 1935.4
+        },
+        "transactionsSummary": {
+          "fromDate": "2025-12-01",
+          "toDate": "2025-12-18",
+          "transactionCount": 4,
+          "totalDebits": 240,
+          "totalCredits": 0,
+          "largestDebit": {
+            "amount": 110,
+            "currency": "ILS",
+            "transactionId": "CC-TRX-3314-02",
+            "bookingDate": "2025-12-09",
+            "description": "GROCERY STORE"
+          }
+        },
+        "transactions": [
+          {
+            "transactionId": "CC-TRX-3314-02",
+            "status": "POSTED",
+            "type": "PURCHASE",
+            "amount": 110,
+            "currency": "ILS",
+            "transactionDate": "2025-12-08",
+            "postingDate": "2025-12-09",
+            "description": "GROCERY STORE",
+            "merchant": {
+              "name": "SHUFERSAL",
+              "mcc": "5411",
+              "location": {
+                "city": "Petah Tikva",
+                "country": "IL"
+              }
+            },
+            "installments": {
+              "isInstallment": false,
+              "planType": null,
+              "totalInstallments": null,
+              "currentInstallment": null,
+              "installmentAmount": null
+            },
+            "references": {
+              "authorizationCode": "AUTH-441902",
+              "rrn": "RRN-441902771"
+            }
+          }
+        ],
+        "pagination": {
+          "hasMore": false,
+          "nextCursor": null
+        }
+      }
+    ]
+  },
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "currencyDecimals": {
+      "ILS": 2
+    },
+    "disclaimers": [
+      "Pending card transactions may change before final posting.",
+      "Statement amounts are based on issuer statement generation rules and may be subject to adjustments."
+    ]
+  }
+}]
